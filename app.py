@@ -6,7 +6,7 @@ from dash_bootstrap_components._components.Container import Container
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
 from eda_component import Eda
-from pca_component import Pca
+from pca_component import Pca_Propio
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -130,14 +130,17 @@ menu  = html.Div([
 )
 def show_pca(n_clicks):
     if n_clicks > 0:
-        outPCA = Pca(df)
+        outPCA = Pca_Propio(df)
         return [
             html.Div([
                dash_table.DataTable(
-                    data = outPCA.getEscala('StandardScaler'),
+                    data = outPCA.getEscala('StandardScaler').to_dict('records'),
                     page_size=10,
                     columns=[{'name': i, 'id': i} for i in outPCA.getEscala('StandardScaler').columns]
                 ),
+                # dcc.Graph(
+                #     outPCA.getGraficaVarianza()
+                # ),
             ])
         ]
     else:
