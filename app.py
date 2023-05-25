@@ -145,6 +145,8 @@ def show_pca(n_clicks):
                 dcc.Graph(
                     figure = outPCA.graficaVarianzaAcumulada()
                 ),
+                html.P(outPCA.prueba()),
+                0.9999998260876949
             ])
         ]
     else:

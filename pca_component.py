@@ -21,12 +21,15 @@ class Pca_Propio():
         elif escala == 'MinMaxScaler':
             estandarizar = MinMaxScaler()
         MEstandarizada = estandarizar.fit_transform(self.df)
-        dataFrameMEstandarizada = pd.DataFrame(MEstandarizada, columns=self.df.columns).reset_index().rename(columns={"index": "Column"})
+        dataFrameMEstandarizada = pd.DataFrame(MEstandarizada, columns=self.df.columns)
         # dataFrameMEstandarizada['Column'] = dataFrameMEstandarizada['Column'].astype(str)
         # mat_stand_dataframe = estandarizar_datos(df_numeric, escala)
-        self.pca = PCA(n_components=8).fit(dataFrameMEstandarizada)
+        self.pca = PCA().fit(dataFrameMEstandarizada)
         self.varianza = self.pca.explained_variance_ratio_
         return dataFrameMEstandarizada
+
+    def prueba(self):
+        return sum(self.varianza[0:9])
 
     def getGraficaVarianzaExplicada(self):
         colors = px.colors.qualitative.Plotly
@@ -71,7 +74,7 @@ class Pca_Propio():
                         xaxis_title='Número de componentes',
                         yaxis_title='Varianza acumulada')
 
-        fig.add_shape(type="line", x0=1, y0=0.89, x1=8 + 1, y1=0.89, line=dict(color="Red", width=2, dash="dash"))
+        fig.add_shape(type="line", x0=1, y0=0.9, x1=8 + 1, y1=0.9, line=dict(color="Red", width=2, dash="dash"))
         fig.add_shape(type="line", x0=8 + 1, y0=0, x1=8 + 1, y1=self.varAcumulada, line=dict(color="Green", width=2, dash="dash"))
 
         fig.add_annotation(x=8 + 1, y=self.varAcumulada, text=str(round(self.varAcumulada * 100, 1)) + f'%. {8 + 1} Componentes', showarrow=True, arrowhead=1)
