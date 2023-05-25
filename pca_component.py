@@ -35,7 +35,7 @@ class Pca_Propio():
             fig.add_trace(go.Bar(x=[i], y=[self.varianza[i-1]*100],marker_color=colors[i % len(colors)], legendgroup=f'Componente {i}', name=f'Componente {i}'))
 
         fig.update_layout(
-            title='Varianza explicada por componente',
+            title='Varianza explicada',
             xaxis=dict(title="Componentes Principales"),
             yaxis=dict(title="Varianza (%)")
         )
@@ -50,6 +50,40 @@ class Pca_Propio():
         # Eje X: valores
         fig.update_xaxes(tickmode='linear')
         return fig
+
+    def graficaVarianzaAcumulada(self):
+        for i in range(0, self.varianza.size):
+            self.varAcumulada = sum(self.varianza[0:i+1])
+            if self.varAcumulada >= 0.89:
+                self.varAcumuladaPCA = (self.varAcumulada - self.varianza[i])
+                self.numComponentesPCA = i - 1
+                break
+        # varianza_acumulada = grafico_varianza_acumulada(Varianza, varAcumuladaPCA, numComponentesPCA, relevancia)
+        
+        fig = go.Figure()
+
+        x_range = np.arange(1, self.varianza.size + 1, step=1)
+        y_range = np.cumsum(self.varianza)
+
+        fig.add_trace(go.Scatter(x=x_range, y=y_range, mode='lines+markers', marker=dict(size=10, color='blue'), name='Núm. Componente'))
+
+        fig.update_layout(title='Varianza acumulada',
+                        xaxis_title='Número de componentes',
+                        yaxis_title='Varianza acumulada')
+
+        fig.add_shape(type="line", x0=1, y0=0.89, x1=8 + 1, y1=0.89, line=dict(color="Red", width=2, dash="dash"))
+        fig.add_shape(type="line", x0=8 + 1, y0=0, x1=8 + 1, y1=self.varAcumulada, line=dict(color="Green", width=2, dash="dash"))
+
+        fig.add_annotation(x=8 + 1, y=self.varAcumulada, text=str(round(self.varAcumulada * 100, 1)) + f'%. {8 + 1} Componentes', showarrow=True, arrowhead=1)
+
+        fig.add_trace(go.Scatter(x=x_range, y=y_range, fill='tozeroy', mode='none', name='Área bajo la curva', fillcolor='rgba(0, 147, 255, 0.44)'))
+
+        fig.update_xaxes(range=[1, self.varianza.size], tickmode='linear')
+        fig.update_yaxes(range=[0, 1.1],
+                        tickmode='array',
+                        tickvals=np.arange(0, 1.1, step=0.1))
+        return fig
+
 
 
 

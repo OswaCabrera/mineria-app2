@@ -142,6 +142,9 @@ def show_pca(n_clicks):
                 dcc.Graph(
                     figure = outPCA.getGraficaVarianzaExplicada()
                 ),
+                dcc.Graph(
+                    figure = outPCA.graficaVarianzaAcumulada()
+                ),
             ])
         ]
     else:
