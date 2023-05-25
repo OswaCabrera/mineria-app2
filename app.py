@@ -133,14 +133,15 @@ def show_pca(n_clicks):
         outPCA = Pca_Propio(df)
         return [
             html.Div([
-               dash_table.DataTable(
+                html.H4("Datos escalados: "),
+                dash_table.DataTable(
                     data = outPCA.getEscala('StandardScaler').to_dict('records'),
                     page_size=10,
                     columns=[{'name': i, 'id': i} for i in outPCA.getEscala('StandardScaler').columns]
                 ),
-                # dcc.Graph(
-                #     outPCA.getGraficaVarianza()
-                # ),
+                dcc.Graph(
+                    figure = outPCA.getGraficaVarianzaExplicada()
+                ),
             ])
         ]
     else:
@@ -156,23 +157,24 @@ def show_eda(n_clicks):
         return [
             html.Div([
                 html.P(str(out.columnasYfilas())),
-                html.P("Tipos de datos: "),
+                html.H4("Tipos de datos: "),
                 dash_table.DataTable(
                     data = out.getTypes().to_dict('records'),
                     page_size=10,
                     columns=[{'name': i, 'id': i} for i in out.getTypes().columns]
                 ),
-                html.P("Valores Nulos: "),
+                html.H4("Valores Nulos: "),
                 dash_table.DataTable(
                     data = out.getNulos().to_dict('records'),
                     page_size=10,
                     columns=[{'name': i, 'id': i} for i in out.getNulos().columns]
                 ),
-                html.P("Datos estadísticos: "),
+                html.H4("Datos estadísticos: "),
                 dash_table.DataTable(
                     data = out.getDescribe().to_dict('records'),
                     columns=[{'name': i, 'id': i} for i in out.getDescribe().columns]
                 ),
+                html.H4("Histogramas: "),
                 html.Div([
                     "Selecciona la o las variables para mostrar su histograma:",
                     dcc.Dropdown(
@@ -182,10 +184,10 @@ def show_eda(n_clicks):
                         id='value-histograma-eda',
                         multi=True
                     ),
-
                     dcc.Graph(id='histograma-eda'),
                 ]),
             ]),
+            html.H4("Matriz de correlación: "),
             dcc.Graph(
                     id='matriz',
                     figure={

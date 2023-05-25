@@ -14,37 +14,38 @@ class Pca_Propio():
     def __init__(self, df):
         self.df = df
 
-    def getEscala(self, escala):
-        global MEstandarizada
+    def getEscala(self, escala = 'StandardScaler' ):
+        df_numeric = self.df.select_dtypes(include=['float64', 'int64'])
         if escala == 'StandardScaler':
             estandarizar = StandardScaler()
-            MEstandarizada = estandarizar.fit_transform(self.df)
         elif escala == 'MinMaxScaler':
             estandarizar = MinMaxScaler()
-            MEstandarizada = estandarizar.fit_transform(self.df)
+        MEstandarizada = estandarizar.fit_transform(self.df)
         dataFrameMEstandarizada = pd.DataFrame(MEstandarizada, columns=self.df.columns).reset_index().rename(columns={"index": "Column"})
-        dataFrameMEstandarizada['Column'] = dataFrameMEstandarizada['Column'].astype(str)
+        # dataFrameMEstandarizada['Column'] = dataFrameMEstandarizada['Column'].astype(str)
+        # mat_stand_dataframe = estandarizar_datos(df_numeric, escala)
+        self.pca = PCA(n_components=8).fit(dataFrameMEstandarizada)
+        self.varianza = self.pca.explained_variance_ratio_
         return dataFrameMEstandarizada
 
-    def getGraficaVarianza(self):
-        global MEstandarizada
-        varianza = 0
+    def getGraficaVarianzaExplicada(self):
+        colors = px.colors.qualitative.Plotly
         fig = go.Figure()
-        for i in range(1, varianza.size + 1):
-            fig.add_trace(go.Bar(x=[i], y=[varianza[i-1]*100],marker_color=colors[i % len(colors)], legendgroup=f'Componente {i}', name=f'Componente {i}'))
+        for i in range(1, self.varianza.size + 1):
+            fig.add_trace(go.Bar(x=[i], y=[self.varianza[i-1]*100],marker_color=colors[i % len(colors)], legendgroup=f'Componente {i}', name=f'Componente {i}'))
 
         fig.update_layout(
-            title='Varianza explicada por cada componente',
+            title='Varianza explicada por componente',
             xaxis=dict(title="Componentes Principales"),
-            yaxis=dict(title="Varianza explicada (%)")
+            yaxis=dict(title="Varianza (%)")
         )
 
         # Se muestra el porcentaje de varianza de cada componente encima de su respectiva barra
-        for i in range(1, varianza.size + 1):
-            fig.add_annotation(x=i, y=varianza[i - 1] * 100, text=str(round(varianza[i - 1] * 100, 2)) + '%', yshift=10, showarrow=False, font_color='black')
+        for i in range(1, self.varianza.size + 1):
+            fig.add_annotation(x=i, y=self.varianza[i - 1] * 100, text=str(round(self.varianza[i - 1] * 100, 2)) + '%', yshift=10, showarrow=False, font_color='black')
 
         # Se agrega un scatter que pase por la varianza de cada componente
-        fig.add_scatter(x=np.arange(1, varianza.size + 1, step=1), y=varianza * 100, mode='lines+markers', name='Varianza explicada', showlegend=False)
+        fig.add_scatter(x=np.arange(1, self.varianza.size + 1, step=1), y=self.varianza * 100, mode='lines+markers', name='Varianza explicada', showlegend=False)
 
         # Eje X: valores
         fig.update_xaxes(tickmode='linear')
