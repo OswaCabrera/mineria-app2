@@ -32,10 +32,9 @@ class Pca_Propio():
         return sum(self.varianza[0:9])
 
     def getGraficaVarianzaExplicada(self):
-        colors = px.colors.qualitative.Plotly
         fig = go.Figure()
         for i in range(1, self.varianza.size + 1):
-            fig.add_trace(go.Bar(x=[i], y=[self.varianza[i-1]*100],marker_color=colors[i % len(colors)], legendgroup=f'Componente {i}', name=f'Componente {i}'))
+            fig.add_trace(go.Bar(x=[i], y=[self.varianza[i-1]*100], legendgroup=f'Componente {i}', name=f'Componente {i}'))
 
         fig.update_layout(
             title='Varianza explicada',
@@ -68,7 +67,7 @@ class Pca_Propio():
         x_range = np.arange(1, self.varianza.size + 1, step=1)
         y_range = np.cumsum(self.varianza)
 
-        fig.add_trace(go.Scatter(x=x_range, y=y_range, mode='lines+markers', marker=dict(size=10, color='blue'), name='Núm. Componente'))
+        fig.add_trace(go.Scatter(x=x_range, y=y_range, mode='lines+markers', marker=dict(size=10, color='red'), name='# Componente'))
 
         fig.update_layout(title='Varianza acumulada',
                         xaxis_title='Número de componentes',
