@@ -133,6 +133,7 @@ def show_pca(n_clicks):
         outPCA = Pca_Propio(df)
         return [
             html.Div([
+                html.H2("Análisis de Componentes Principales "),
                 html.H4("Datos escalados: "),
                 dash_table.DataTable(
                     data = outPCA.getEscala('StandardScaler').to_dict('records'),
@@ -146,7 +147,6 @@ def show_pca(n_clicks):
                     figure = outPCA.graficaVarianzaAcumulada()
                 ),
                 html.P(outPCA.prueba()),
-                0.9999998260876949
             ])
         ]
     else:
@@ -161,6 +161,7 @@ def show_eda(n_clicks):
         out = Eda(df)
         return [
             html.Div([
+                html.H2("Análisis Exploratorio de Datos "),
                 html.P(str(out.columnasYfilas())),
                 html.H4("Tipos de datos: "),
                 dash_table.DataTable(
@@ -185,7 +186,7 @@ def show_eda(n_clicks):
                     dcc.Dropdown(
                         [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
                         # Seleccionamos por defecto todas las columnas numéricas, a partir de la segunda
-                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:3],
+                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:1],
                         id='value-histograma-eda',
                         multi=True
                     ),
