@@ -6,6 +6,7 @@ from dash_bootstrap_components._components.Container import Container
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
 from eda_component import Eda
+from pca_component import Pca
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -118,9 +119,29 @@ menu  = html.Div([
         ]),
             html.Div([
             html.Div(id="eda-resultado"),
+            html.Div(id="pca-resultado"),
+            html.Div(id="bosques-resultado"),
         ]),
     ])
     
+@app.callback(
+    Output("pca-resultado", "children"),
+    [Input("pca-button", "n_clicks")],
+)
+def show_pca(n_clicks):
+    if n_clicks > 0:
+        outPCA = Pca(df)
+        return [
+            html.Div([
+               dash_table.DataTable(
+                    data = outPCA.getEscala('StandardScaler'),
+                    page_size=10,
+                    columns=[{'name': i, 'id': i} for i in outPCA.getEscala('StandardScaler').columns]
+                ),
+            ])
+        ]
+    else:
+        return ''
 
 @app.callback(
     Output("eda-resultado", "children"),
@@ -162,6 +183,31 @@ def show_eda(n_clicks):
                     dcc.Graph(id='histograma-eda'),
                 ]),
             ]),
+            dcc.Graph(
+                    id='matriz',
+                    figure={
+                        'data': [
+                            {'x': df.corr().columns, 'y': df.corr().columns, 'z': df.corr().values, 'type': 'heatmap', 'colorscale': 'RdBu'}
+                        ],
+                        'layout': {
+                            'title': 'Matriz de correlación',
+                            'xaxis': {'side': 'down'},
+                            'yaxis': {'side': 'left'},
+                            # Agregamos el valor de correlación por en cada celda (text_auto = True)
+                            'annotations': [
+                                dict(
+                                    x=df.corr().columns[i],
+                                    y=df.corr().columns[j],
+                                    text=str(round(df.corr().values[i][j], 4)),
+                                    showarrow=False,
+                                    font=dict(
+                                        color='white' if abs(df.corr().values[i][j]) >= 0.67  else 'black'
+                                    )
+                                ) for i in range(len(df.corr().columns)) for j in range(len(df.corr().columns))
+                            ]
+                        }
+                    }
+                )
         ]
     else:
         return ''
