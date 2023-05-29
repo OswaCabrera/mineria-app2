@@ -1,0 +1,11 @@
+
+
+/* Estilo para las tablas */
+.dash-spreadsheet-container {
+    overflow-x: auto;
+  }
+
+  /* Estilo para las gráficas */
+  .dash-graph {
+    overflow-x: auto;
+  }
