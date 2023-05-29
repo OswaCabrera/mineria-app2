@@ -13,19 +13,50 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-navbar = dbc.Navbar(
-    [
-    #     dbc.NavbarBrand("My Dashboard"),
-    #     dbc.Nav(
-    #         [
-    #             dbc.NavItem(dbc.NavLink("Link 1", href="#")),
-    #             dbc.NavItem(dbc.NavLink("Link 2", href="#")),
-    #         ],
-    #         navbar=True,
-    #     ),
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Guía", href="#")),
+        dbc.DropdownMenu(
+            children=[
+                dbc.DropdownMenuItem("Inicia Sesión", href="#"),
+                dbc.DropdownMenuItem("Registrate", href="#"),
+            ],
+            nav=True,
+            in_navbar=True,
+            label="Autenticate",
+        ),
     ],
-    color="dark",
+    brand="MineriApp",
+    brand_href="#",
+    color="primary",
     dark=True,
+)
+
+carousel = dbc.Carousel(
+    items=[
+        {
+            "key": "1",
+            "src": "/static/images/eda.png",
+            "header": "EDA",
+            "caption": "Analisís Exploratorio de Datos",
+        },
+        {
+            "key": "2",
+            "src": "/static/images/pca.jpg",
+            "header": "PCA",
+            "caption": "Analisís de Componentes Principales",
+        },
+        {
+            "key": "3",
+            "src": "/static/images/arbol.webp",
+            "header": "Arboles de Decisión",
+            "caption": "Analisís de Arboles de Decisión",
+        },
+    ],
+    variant="dark",
+    interval=2000,
+    style={'width': '30%'},
+    className="bg-opacity-25 p-2 m-auto align-middle bg-primary text-dark fw-bold rounded",
 )
 
 inputs = html.Div(
@@ -47,7 +78,7 @@ inputs = html.Div(
             'margin': '10px'
         },
         # Allow multiple files to be uploaded
-        multiple=True
+        multiple=False
     ),
     html.Div(id='output-data-upload'),
     ],
@@ -80,14 +111,7 @@ def parse_contents(contents, filename, date):
             dash_table.DataTable(data=df.to_dict('records'), page_size=10)
         ]),
 
-        html.Hr(),  # horizontal line
-
-        # For debugging, display the raw contents provided by the web browser
-        # html.Div('Raw Content'),
-        # html.Pre(contents[0:200] + '...', style={
-        #     'whiteSpace': 'pre-wrap',
-        #     'wordBreak': 'break-all'
-        # })
+        html.Hr(), 
         html.P("Ahora que quieres hacer con ellos?"),
         menu
     ])
@@ -103,8 +127,17 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
 
+presentacion = html.Div([
+    html.H1("Bienvenido a MineriApp", className="text-center text-primary"),
+    html.H4("Esta aplicación te ayudará a realizar minería de datos de una manera sencilla y rápida.", className="text-center"),
+])
+
 app.layout = html.Div([
     navbar,
+    presentacion,
+    html.Div([
+        carousel,
+    ]),
     inputs,
     html.Div(id='children', style={"marginLeft":"20px"}),
     html.Div(id='output-data-upload'),
