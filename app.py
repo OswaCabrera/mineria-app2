@@ -5,36 +5,28 @@ from dash_bootstrap_components._components.Container import Container
 
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
-from components.eda_component import Eda
-from components.pca_component import Pca_Propio
-
-
+from eda_component import Eda
+from pca_component import Pca_Propio
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.PULSE, "/assets/styles.css"])
 
-#componentes
+# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-navbar = dbc.NavbarSimple(
-    children=[
-        dbc.NavItem(dbc.NavLink("Guía", href="#")),
-        dbc.DropdownMenu(
-            children=[
-                dbc.DropdownMenuItem("Inicia Sesión", href="#"),
-                dbc.DropdownMenuItem("Registrate", href="#"),
-            ],
-            nav=True,
-            in_navbar=True,
-            label="Autenticate",
-        ),
+navbar = dbc.Navbar(
+    [
+    #     dbc.NavbarBrand("My Dashboard"),
+    #     dbc.Nav(
+    #         [
+    #             dbc.NavItem(dbc.NavLink("Link 1", href="#")),
+    #             dbc.NavItem(dbc.NavLink("Link 2", href="#")),
+    #         ],
+    #         navbar=True,
+    #     ),
     ],
-    brand="MineriApp",
-    brand_href="#",
-    color="primary",
+    color="dark",
     dark=True,
 )
-
-
 
 inputs = html.Div(
     [
@@ -52,17 +44,14 @@ inputs = html.Div(
             'borderStyle': 'dashed',
             'borderRadius': '5px',
             'textAlign': 'center',
-            'margin': '10px',
-            'color': 'black'
+            'margin': '10px'
         },
         # Allow multiple files to be uploaded
         multiple=True
     ),
-    html.Div(id='output-data-upload')
-
+    html.Div(id='output-data-upload'),
     ],
 )
-
 def parse_contents(contents, filename, date):
     global df
 
@@ -88,11 +77,7 @@ def parse_contents(contents, filename, date):
 
         html.Div([
             html.Div(children='Tus datos son: '),
-            dash_table.DataTable(
-                data=df.to_dict('records'),
-                page_size=10,
-            )
-
+            dash_table.DataTable(data=df.to_dict('records'), page_size=10)
         ]),
 
         html.Hr(),  # horizontal line
@@ -118,33 +103,19 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
 
-presentacion = html.Div([
-    html.H1("Bienvenido a MineriApp", className="text-center text-primary"),
-    html.H4("Esta aplicación te ayudará a realizar minería de datos de una manera sencilla y rápida.", className="text-center"),
+app.layout = html.Div([
+    navbar,
+    inputs,
+    html.Div(id='children', style={"marginLeft":"20px"}),
+    html.Div(id='output-data-upload'),
 ])
-
-app.layout = html.Div(
-    children=[
-        navbar,
-        presentacion,
-        html.Div(
-            style={'maxWidth': '80%', 'margin': '0 auto'},
-            children=[
-                inputs,
-                html.Div(id='children', style={"marginLeft": "20px"}),
-                html.Div(id='output-data-upload'),
-            ]
-        )
-    ]
-)
-
 
 #Create a menu of tree buttons
 menu  = html.Div([
             dbc.ButtonGroup([
             dbc.Button("EDA",  id="eda-button", n_clicks=0),
-            dbc.Button("PCA", id="pca-button"),
-            dbc.Button("Bosques", id="bosques-button"),
+            dbc.Button("PCA", id="pca-button"), 
+            dbc.Button("Bosques", id="bosques-button"),    
         ]),
             html.Div([
             html.Div(id="eda-resultado"),
@@ -152,7 +123,7 @@ menu  = html.Div([
             html.Div(id="bosques-resultado"),
         ]),
     ])
-
+    
 @app.callback(
     Output("pca-resultado", "children"),
     [Input("pca-button", "n_clicks")],
@@ -175,6 +146,7 @@ def show_pca(n_clicks):
                 dcc.Graph(
                     figure = outPCA.graficaVarianzaAcumulada()
                 ),
+                html.P(outPCA.prueba()),
             ])
         ]
     else:
