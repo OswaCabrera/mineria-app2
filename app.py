@@ -15,21 +15,21 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.PULSE, "/assets/style
 
 #componentes
 
-navbar = dbc.Navbar(
-    className="sticky-top",
+navbar = dbc.NavbarSimple(
     children=[
-        dbc.NavbarBrand("Proyecto Final"),
-        dbc.Nav(
-            [
-                dbc.NavItem(dbc.NavLink("EDA", href="#eda-section")),
-                dbc.NavItem(dbc.NavLink("PCA", href="#pca-section")),
-                dbc.NavItem(dbc.NavLink("Arboles y Bosques", href="#arboles-section")),
-                dbc.NavItem(dbc.NavLink("Ejemplos", href="#ejemplos-section")),
-                dbc.NavItem(dbc.NavLink("Documentación", href="#documentacion-section")),
+        dbc.NavItem(dbc.NavLink("Guía", href="#")),
+        dbc.DropdownMenu(
+            children=[
+                dbc.DropdownMenuItem("Inicia Sesión", href="#"),
+                dbc.DropdownMenuItem("Registrate", href="#"),
             ],
-            navbar=True,
+            nav=True,
+            in_navbar=True,
+            label="Autenticate",
         ),
     ],
+    brand="MineriApp",
+    brand_href="#",
     color="primary",
     dark=True,
 )
@@ -118,9 +118,15 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
 
+presentacion = html.Div([
+    html.H1("Bienvenido a MineriApp", className="text-center text-primary"),
+    html.H4("Esta aplicación te ayudará a realizar minería de datos de una manera sencilla y rápida.", className="text-center"),
+])
+
 app.layout = html.Div(
     children=[
         navbar,
+        presentacion,
         html.Div(
             style={'maxWidth': '80%', 'margin': '0 auto'},
             children=[
@@ -169,7 +175,6 @@ def show_pca(n_clicks):
                 dcc.Graph(
                     figure = outPCA.graficaVarianzaAcumulada()
                 ),
-                html.P(outPCA.prueba()),
             ])
         ]
     else:
