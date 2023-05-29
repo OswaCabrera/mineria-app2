@@ -45,6 +45,7 @@ carousel = dbc.Carousel(
             "src": "/static/images/pca.jpg",
             "header": "PCA",
             "caption": "Analisís de Componentes Principales",
+            "img_style": {"height": "50%", "width": "50%"},
         },
         {
             "key": "3",
@@ -52,6 +53,7 @@ carousel = dbc.Carousel(
             "header": "Arboles de Decisión",
             "caption": "Analisís de Arboles de Decisión",
         },
+        
     ],
     variant="dark",
     interval=2000,
@@ -134,14 +136,37 @@ presentacion = html.Div([
 
 app.layout = html.Div([
     navbar,
-    presentacion,
     html.Div([
-        carousel,
-    ]),
+        dbc.Fade(
+            dbc.Card([
+                    presentacion,
+                    carousel,]
+                ),
+                id="fade",
+                is_in=True,
+                appear=True,
+            ),
+        dbc.Button(
+                "Toggle fade", id="id=boton-ocultar", className="mb-3", n_clicks=0
+            ), 
+    ],
+    id="elemento-a-ocultar",),   
     inputs,
     html.Div(id='children', style={"marginLeft":"20px"}),
     html.Div(id='output-data-upload'),
 ])
+
+@app.callback(
+    Output('elemento-a-ocultar', 'style'),
+    [Input('boton-ocultar', 'n_clicks')]
+)
+def ocultar_elemento(n_clicks):
+    if n_clicks is None:
+        return {'display': 'block'}  # Establece el estilo inicial del elemento
+    elif n_clicks % 2 == 0:
+        return {'display': 'block'}  # Muestra el elemento si se hace clic en el botón un número par de veces
+    else:
+        return {'display': 'none'} 
 
 #Create a menu of tree buttons
 menu  = html.Div([
