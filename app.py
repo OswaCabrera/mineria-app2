@@ -5,15 +5,14 @@ from dash_bootstrap_components._components.Container import Container
 
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
-from eda_component import Eda
-from pca_component import Pca_Propio
+from components.eda_component import Eda
+from components.pca_component import Pca_Propio
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.JOURNAL, "/assets/styles.css"])
 
 navbar = dbc.NavbarSimple(
+    className="sticky-top",
     children=[
         dbc.NavItem(dbc.NavLink("Guía", href="#")),
         dbc.DropdownMenu(
@@ -80,7 +79,7 @@ inputs = html.Div(
             'margin': '10px'
         },
         # Allow multiple files to be uploaded
-        multiple=False
+        multiple=True
     ),
     html.Div(id='output-data-upload'),
     ],
@@ -110,10 +109,12 @@ def parse_contents(contents, filename, date):
 
         html.Div([
             html.Div(children='Tus datos son: '),
-            dash_table.DataTable(data=df.to_dict('records'), page_size=10)
+            dash_table.DataTable(
+                data=df.to_dict('records'),
+                page_size=10)
         ]),
 
-        html.Hr(), 
+        html.Hr(),
         html.P("Ahora que quieres hacer con ellos?"),
         menu
     ])
@@ -133,40 +134,6 @@ presentacion = html.Div([
     html.H1("Bienvenido a MineriApp", className="text-center text-primary"),
     html.H4("Esta aplicación te ayudará a realizar minería de datos de una manera sencilla y rápida.", className="text-center"),
 ])
-
-app.layout = html.Div([
-    navbar,
-    html.Div([
-        dbc.Fade(
-            dbc.Card([
-                    presentacion,
-                    carousel,]
-                ),
-                id="fade",
-                is_in=True,
-                appear=True,
-            ),
-        dbc.Button(
-                "Toggle fade", id="id=boton-ocultar", className="mb-3", n_clicks=0
-            ), 
-    ],
-    id="elemento-a-ocultar",),   
-    inputs,
-    html.Div(id='children', style={"marginLeft":"20px"}),
-    html.Div(id='output-data-upload'),
-])
-
-@app.callback(
-    Output('elemento-a-ocultar', 'style'),
-    [Input('boton-ocultar', 'n_clicks')]
-)
-def ocultar_elemento(n_clicks):
-    if n_clicks is None:
-        return {'display': 'block'}  # Establece el estilo inicial del elemento
-    elif n_clicks % 2 == 0:
-        return {'display': 'block'}  # Muestra el elemento si se hace clic en el botón un número par de veces
-    else:
-        return {'display': 'none'} 
 
 #Create a menu of tree buttons
 menu  = html.Div([
@@ -296,6 +263,22 @@ def update_graph1(value):
     )
 
     return fig
+
+app.layout = html.Div(
+    children=[
+        navbar,
+        presentacion,
+        carousel,
+        html.Div(
+            style={'maxWidth': '80%', 'margin': '0 auto'},
+            children=[
+                inputs,
+                html.Div(id='children', style={"marginLeft": "20px"}),
+                html.Div(id='output-data-upload'),
+            ]
+        )
+    ]
+)
 
 
 if __name__ == '__main__':
