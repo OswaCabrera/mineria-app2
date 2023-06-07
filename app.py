@@ -13,13 +13,14 @@ from components import home_component, tree_classif_component, tree_regre_compon
 from components.eda_component import Eda
 from components.pca_component import Pca_Propio
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.JOURNAL, "/assets/styles.css"])
-app.title = 'MineriApp'
+external_stylesheets = [dbc.themes.UNITED, "/assets/styles.css"]
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
+app.title = 'MineriApp'
+app.config.suppress_callback_exceptions = True
 
 navbar = dbc.NavbarSimple(
-    className="sticky-top",
+    className="sticky-top bg-dark",
     children=[
         dbc.NavItem(dbc.NavLink("Inicio", href="/")),
         dbc.NavItem(dbc.NavLink("EDA", href="/eda")),
@@ -44,13 +45,16 @@ navbar = dbc.NavbarSimple(
         ),
         dbc.DropdownMenu(
             children=[
-                dbc.DropdownMenuItem("Inicia Sesión", href="/login"),
-                dbc.DropdownMenuItem("Regístrate", href="/register"),
+                dbc.DropdownMenuItem("EDA", href="/"),
+                dbc.DropdownMenuItem("PCA", href="/"),
+                dbc.DropdownMenuItem("Arboles", href="/"),
+                dbc.DropdownMenuItem("Bosques", href="/"),
             ],
             nav=True,
             in_navbar=True,
-            label="Autenticación",
+            label="Acerca de",
         ),
+
     ],
     brand="MineriApp",
     brand_href="/",
@@ -72,7 +76,7 @@ routes = {
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
     navbar,
-    html.Div(id="page-content", style={'margin-top': '60px'})
+    dbc.Container(id="page-content", fluid=True)
 ])
 
 

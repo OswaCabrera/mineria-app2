@@ -2,10 +2,20 @@
 
 /* Estilo para las tablas */
 .dash-spreadsheet-container {
-    overflow-x: auto;
-  }
+  overflow-x: auto;
+}
 
-  /* Estilo para las gráficas */
-  .dash-graph {
-    overflow-x: auto;
-  }
+/* Estilo para las gráficas */
+.dash-graph {
+  overflow-x: auto;
+}
+
+.card-effect:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+.text-primary,
+.text-primary:not(.navbar-brand) {
+  color: #000000;
+}
