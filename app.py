@@ -8,7 +8,7 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_components._components.Container import Container
 
-from components import home_component, tree_classif_component, tree_regre_component, forest_classif_component, forest_regre_component
+from components import home_component, acp, tree_classif_component, tree_regre_component, forest_classif_component, forest_regre_component, eda
 
 from components.eda_component import Eda
 from components.pca_component import Pca_Propio
@@ -61,8 +61,8 @@ navbar = dbc.NavbarSimple(
 # Diccionario de rutas y componentes correspondientes
 routes = {
     "/": home_component.layout,
-    # "/eda": Eda.layout,
-    # "/pca": Pca_Propio.layout,
+    "/eda": eda.layout,
+    "/pca": acp.layout,
     "/arboles_clasificacion": tree_classif_component.layout,
     "/arboles_regresion": tree_regre_component.layout,
     "/bosques_clasificacion": forest_classif_component.layout,
