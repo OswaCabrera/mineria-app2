@@ -7,6 +7,7 @@ import numpy as np                # Para crear vectores y matrices n dimensional
 import matplotlib.pyplot as plt   # Para la generación de gráficas a partir de los datos
 import seaborn as sns             # Para la visualización de datos basado en matplotlib         
 import dash
+import time
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table, Input, Output, callback
 import plotly.express as px
@@ -87,14 +88,14 @@ tab_selected_style = {
 }
 
 layout = html.Div([
-    html.H1('Análisis exploratorio de Datos', style={'text-align': 'center', "margin-left": "22rem"}),
+    html.H1('Análisis exploratorio de Datos', style={'text-align': 'center'}),
     dcc.Upload(
         id='upload-data',
         children=html.Div([
-            'Drag and Drop or Select Files'
+            'Arrastra y suelta tu archivo aquí o selecciona uno',
         ]),
         style={
-            'width': '60%',
+            'width': '100%',
             'height': '100%',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -102,7 +103,6 @@ layout = html.Div([
             'borderRadius': '5px',
             'textAlign': 'center',
             'margin': '10px',
-            "margin-left": "32rem",
             'display': 'flex',
             'justify-content': 'center',
             'align-items': 'center',
@@ -111,8 +111,7 @@ layout = html.Div([
         multiple=True, # Allow multiple files to be uploaded
         accept='.csv, .txt, .xls, .xlsx' # Restrict to csv, txt, xls, xlsx files
     ),
-    sidebar,
-    html.Div(id='output-data-upload', style=CONTENT_STYLE),
+    html.Div(id='output-data-upload'),
 
 ])
 
@@ -135,38 +134,35 @@ def parse_contents(contents, filename,date):
         ])
 
     return html.Div([
-        dbc.Alert('El archivo cargado es: {}'.format(filename), color="success"),
-        # Solo mostramos las primeras 5 filas del dataframe, y le damos estilo para que las columnas se vean bien
+        dcc.Loading(
+            id="loading-1",
+            type="default",
+            children=html.Div(id="loading-output-1")
+        ),
+        html.P('Estás trabajando con el archivo: {}. Si quieres cambiar de archivo vuelve a cargar otro'.format(filename)),
+        # dbc.Alert('{}'.format(df.shape[0]).' Filas X {}'.format(df.shape[1]).' Columnas', color="info"),
+        # Print the number of rows and columns in the same line
+        html.H3("Tus datos son:" , style={'text-align': 'center'}),
+        html.P(
+            " {} Filas X {} Columnas.".format(df.shape[0], df.shape[1]),
+            style={'text-align': 'center'}
+        ),
+        html.H3("Información acerca de tus variables:", style={'text-align': 'center'}),
+
         dash_table.DataTable(
             data=df.to_dict('records'),
-            page_size=8,
+            page_size=10,
             filter_action='native',
             sort_action='native',
             sort_mode='multi',
             column_selectable='single',
             row_deletable=True,
-            cell_selectable=True,
             editable=True,
-            row_selectable='multi',
             columns=[{'name': i, 'id': i, "deletable":True} for i in df.columns],
             style_table={'height': '300px', 'overflowX': 'auto'},
         ),
         
-        html.Hr(),  # horizontal line
-
-        dbc.Row([
-            dbc.Col([
-                dbc.Alert('El número de Filas del Dataframe es de: {}'.format(df.shape[0]), color="info"),
-            ], width=6),
-            dbc.Col([
-                dbc.Alert('El número de Columnas del Dataframe es de: {}'.format(df.shape[1]), color="info"),
-            ], width=6),
-        ]),
-        html.Hr(),
-
-        # dcc.Tabs([
-        #     dcc.Tab(label='Tipos de datos, Valores Nulos y Valores Únicos', style=tab_style, selected_style=tab_selected_style,children=[
-        #         html.Br(),
+        html.H3("Estadísticas descriptivas de tus variables:", style={'text-align': 'center'}),
                 dbc.Table(
                     [
                         html.Thead(
@@ -175,11 +171,11 @@ def parse_contents(contents, filename,date):
                                     # Primer columna: nombre de la columna y las demás columnas: nombre de las estadísticas (count, mean, std, min, 25%, 50%, 75%, max)
                                     html.Th('Variable'),
                                     html.Th('Tipo de dato'),
-                                    html.Th('Count'),
+                                    html.Th('Total de datos'),
                                     html.Th('Valores nulos'),
                                     html.Th('Valores únicos'),
-                                    html.Th('Datos más frecuentes y su cantidad'),
-                                    html.Th('Datos menos frecuentes y su cantidad'),
+                                    html.Th('Dato más frecuente'),
+                                    html.Th('Dato menos frecuente'),
                                 ]
                             )
                         ),
@@ -190,44 +186,33 @@ def parse_contents(contents, filename,date):
                                         html.Td(column), # Primera columna: nombre de la columna
                                         html.Td(
                                             str(df.dtypes[column]),
-                                            style={
-                                                'color': 'green' if df.dtypes[column] == 'float64' else 'blue' if df.dtypes[column] == 'int64' else 'red' if df.dtypes[column] == 'object' else 'orange' if df.dtypes[column] == 'bool' else 'purple'
-                                            }
                                         ),
-
                                         # Count del tipo de dato (y porcentaje)
                                         html.Td(
                                             [
                                                 html.P("{}".format(df[column].count())),
                                             ]
                                         ),
-
                                         html.Td(
                                             df[column].isnull().sum(),
-                                            style={
-                                                'color': 'red' if df[column].isnull().sum() > 0 else 'green'
-                                            }
                                         ),
 
                                         #Valores únicos
                                         html.Td(
                                             df[column].nunique(),
-                                            style={
-                                                'color': 'green' if df[column].nunique() == 0 else 'black'
-                                            }
                                         ),
 
                                         # Top valores más frecuentes
                                         html.Td(
                                             [
-                                                html.P("{}".format(df[column].value_counts().index[0])+" ("+str(round(df[column].value_counts().values[0]*1,2))+")"),
+                                                html.P("{}".format(df[column].value_counts().index[0])),
                                             ]
                                         ),
 
                                         # Top valores menos frecuentes
                                         html.Td(
                                             [
-                                                html.P("{}".format(df[column].value_counts().index[-1])+" ("+str(round(df[column].value_counts().values[-1]*1,2))+")"),
+                                                html.P("{}".format(df[column].value_counts().index[-1])),
                                             ]
                                         ),
                                     ]
@@ -242,10 +227,7 @@ def parse_contents(contents, filename,date):
                     # Texto centrado y tabla alineada al centro de la página
                     style={'textAlign': 'center', 'width': '100%'}
                 )
-            # ]),
             ,html.Br(),
-            # dcc.Tab(label='Resumen estadístico', style=tab_style, selected_style=tab_selected_style,children=[
-            #     html.Br(),
                 dbc.Table(
                     # Mostamos el resumen estadístico de las variables de tipo object, con su descripción a la izquierda
                     [
@@ -313,24 +295,20 @@ def parse_contents(contents, filename,date):
                             ]
                         )
                     ],
-
                     bordered=True,
                     hover=True,
                     responsive=True,
                     striped=True,
-                    style={'textAlign': 'center', 'width': '100%'}
-                )
-            # ]),
-            ,html.Br(),
-            # dcc.Tab(label='Identificación de valores atípicos', style=tab_style, selected_style=tab_selected_style,children=[
-            #     # Mostramos un histograma por cada variable de tipo numérico:
-
+                    style={'textAlign': 'center', 'width': '100%'},
+                ),
+            
+            html.Br(),
+            html.H3("Histograma y gráfica de cajas y bigotes:", style={'text-align': 'center'}),
                 html.Div([
                     "Selecciona la o las variables para mostrar su histograma:",
                     dcc.Dropdown(
                         [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
-                        # Seleccionamos por defecto todas las columnas numéricas, a partir de la segunda
-                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:3],
+                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][3:3],
                         id='value-histograma-eda',
                         multi=True
                     ),
@@ -339,76 +317,20 @@ def parse_contents(contents, filename,date):
                 ])
             # ]),
             ,html.Br(),
-            # Gráfica de cajas y bigotes
-            # dcc.Tab(label='Gráfica de cajas y bigotes', style=tab_style, selected_style=tab_selected_style,children=[
                 html.Div([
                     "Selecciona la o las variables para mostrar su gráfica de cajas y bigotes:",
                     dcc.Dropdown(
                         [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
                         # Seleccionamos por defecto todas las columnas numéricas, a partir de la segunda
-                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][0:1],
+                        value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:1],
                         id='value-bigotes-eda',
                         multi=True
                     ),
                 
                 dcc.Graph(id='bigotes-eda'),
                 ]),
-            # ]),
-            # dcc.Tab(label='Análisis Correlacional', style=tab_style, selected_style=tab_selected_style,children=[
                 html.Br(),
-
-                dbc.Button(
-                    "Haz click para obtener información adicional del Análisis Correlacional de Datos", id="open-body-scroll-eda", n_clicks=0
-                ),
-
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Análisis Correlacional de Datos (ACD - CDA) 💭")),
-                        dbc.ModalBody(
-                            [
-                                dcc.Markdown('''
-                                💭 El ACD (CDA) es útil para reducir el número de variables, de un espacio de alta dimensión a uno de menor número de dimensiones. 
-
-                                💭 Esto se logra a través de la identificación de variables significativas.
-
-                                💭 Esta identificación de correlaciones se utiliza para determinar el grado de similitud (relevancia/irrelevancia) de los valores de dos variables numéricas.
-
-                                💭 Existe correlación entre 2 variables (X,Y) si al aumentar los valores de X también los hacen de Y, o viceversa.
-
-                                🧠 **Coeficiente de correlación de Pearson (r)**
-
-                                    💭 Cuanto más cerca está R de 1 o -1, más fuerte es la correlación.
-
-                                    💭 Si R es cercano a -1 las variables están correlacionadas negativamente.
-
-                                    💭 Si R es 0, no hay correlación.
-
-                                🧠 **Intervalos utilizados para la identificación de correlaciones**
-
-                                    🔴 De -1.0 a -0.67 y 0.67 a 1.0 se conocen como correlaciones fuertes o altas. 
-
-                                    🟡 De -0.66 a -0.34 y 0.34 a 0.66 se conocen como correlaciones moderadas o medias. 
-
-                                    🔵 De -0.33 a 0.0 y 0.0 a 0.33 se conocen como correlaciones débiles o bajas.
-
-                                '''),
-                            ]
-                        ),
-                        dbc.ModalFooter(
-                            dbc.Button(
-                                "Close",
-                                id="close-body-scroll-eda",
-                                className="ms-auto",
-                                n_clicks=0,
-                            )
-                        ),
-                    ],
-                    id="modal-body-scroll-eda",
-                    scrollable=True,
-                    is_open=False,
-                    size='xl',
-                ),
-                
+                html.H3("Matriz de correlación:", style={'text-align': 'center'}),
                 dcc.Graph(
                     id='matriz',
                     figure={
@@ -434,13 +356,50 @@ def parse_contents(contents, filename,date):
                         }
                     }
                 )
-            # Que cada pestaña se ajuste al tamaño de la ventana
-            # ]),
             ,
             html.Br(),
-    ]) #Fin de la pestaña de análisis de datos
-# ]) #Fin del layout
+            html.Button("Download CSV", id="btn_csv",
+                        style={'textAlign': 'center', 'width': '100%'}
+            ),
+            dcc.Download(id="download-dataframe-csv"),
+            html.Div(
+                [
+                    html.P("Encontraste relaciones fuertes entre las variables? Deberías aplicar Análisis de Componentes Principales (PCA) para reducir la dimensionalidad de tus datos."),
+                    html.Button("Ir a PCA", id="btn_pca", style={'textAlign': 'center', 'width': '100%'}),
+                ]
+            ),
+            # html.Button("Download Excel", id="btn_xlsx"),
+            # dcc.Download(id="download_xslx"),
+    ])
 
+# Redirect to PCA
+@callback(Output("url", "pathname"), Input("btn_pca", "n_clicks"), prevent_initial_call=True)
+def func(n_clicks):
+    if n_clicks> 0:
+        return "/pca"
+
+@callback(
+    Output("download-dataframe-csv", "data"),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def func(n_clicks):
+    return dcc.send_data_frame(df.to_csv, "mydf.csv")
+
+@callback(Output("download_xslx", "data"), Input("btn_xslx", "n_clicks"), prevent_initial_call=True)
+def generate_xlsx(n_nlicks):
+
+    def to_xlsx(bytes_io):
+        xslx_writer = pd.ExcelWriter(bytes_io, engine="xlsxwriter")  # requires the xlsxwriter package
+        df.to_excel(xslx_writer, index=False, sheet_name="sheet1")
+        xslx_writer.close()
+
+    return dcc.send_bytes(to_xlsx, "some_name.xlsx")
+
+@callback(Output("loading-1", "children"), Input("upload-data", "value"))
+def input_triggers_spinner(value):
+    time.sleep(1)
+    return value
 
 @callback(Output('output-data-upload', 'children'),
             Input('upload-data', 'contents'),

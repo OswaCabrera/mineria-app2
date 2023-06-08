@@ -17,6 +17,8 @@ from dash_bootstrap_templates import load_figure_template,ThemeChangerAIO, templ
 
 # load_figure_template("plotly_white")
 
+# df = pd.read_csv("C:\Users\oswal\Documents\DecimoSemestre\DataMining\Data\miami-housing.csv")
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 theme_change = ThemeChangerAIO(
     aio_id="theme",button_props={
@@ -48,57 +50,14 @@ tab_selected_style = {
     'padding': '6px'
 }
 
-cardEstandarizacion = dbc.Card(
-    [
-        dbc.Row(
-            [
-                dbc.Col(
-                    dbc.CardImg(
-                        src="https://media.noria.com/sites/magazine_images/202104/Standardization-chart.png",
-                        className="img-fluid rounded-start", style={"width": "100%", "height": "100%"},
-                    ),
-                    className="col-md-4",
-                ),
-                dbc.Col(
-                    dbc.CardBody(
-                        [
-                            html.H4("Estandarización", className="card-title", style={'text-align': 'center'}),
-                            dcc.Markdown('''
-                                El primer paso para realizar un análisis de componentes principales es estandarizar los datos.
 
-                                📌 El objetivo de este paso es estandarizar (escalar o normalizar) el rango de las variables iniciales, para que cada una de éstas contribuya por igual en el análisis.
-
-                                📌 La razón por la que es fundamental realizar la estandarización, antes de PCA, es que si existen diferencias entre los rangos de las variables iniciales, aquellas variables con rangos más grandes predominarán sobre las que tienen rangos pequeños (por ejemplo, una variable que oscila entre 0 y 100 dominará sobre una que oscila entre 0 y 1), lo que dará lugar a resultados sesgados.
-
-                                📌 Por lo tanto, transformar los datos a escalas comparables puede evitar este problema.
-
-                                📌 Esta tarea se puede realizar con la función `StandardScaler()` o `MinMaxScaler()`, que se encuentran en la librería `sklearn.preprocessing`.
-
-                                💭 ¿Cuál es la diferencia entre `StandardScaler()` y `MinMaxScaler()`?
-
-                                🤖 **StandardScaler** sigue la distribución normal estándar(SND). Por lo tanto, hace media = 0 y escala los datos a la varianza unitaria.
-
-                                🤖 **MinMaxScaler** escala todas las características de datos en el rango \[0, 1\] o en el rango \[-1, 1\] si hay valores negativos en el conjunto de datos. Esta escala comprime todos los valores internos en el rango estrecho \[0 - 0,005\].
-
-                                ''', style={'text-align': 'justify'},className="card-text"),
-                        ]
-                    ),
-                    className="col-md-8",
-                ),
-            ],
-            className="g-0 d-flex align-items-center",
-        )
-    ],
-    className="mb-3",
-    style={"maxWidth": "100%"},
-)
 
 layout = html.Div([
-    html.H1('Principal Component Analysis (PCA)💻', style={'text-align': 'center'}),
+    html.H1('Análisis de Componentes Principal', style={'text-align': 'center'}),
     dcc.Upload(
         id='upload-data',
         children=html.Div([
-            'Drag and Drop or Select Files'
+            'Para empezar seleccione un archivo o arrastrelo y sueltelo aquí'
         ]),
         style={
             'width': '100%',
@@ -140,50 +99,7 @@ def parse_contents(contents, filename,date):
         ])
 
     return html.Div([
-        dbc.Alert('El archivo cargado es: {}'.format(filename), color="success"),
-        # Solo mostramos las primeras 5 filas del dataframe, y le damos estilo para que las columnas se vean bien
-        dash_table.DataTable(
-            #Centramos la tabla de datos:
-            data=df.to_dict('records'),
-            page_size=8,
-            style_data_conditional=[
-                {
-                    'if': {'row_index': 'odd'},
-                    'backgroundColor': 'rgb(248, 248, 248)'
-                }
-            ],
-            filter_action='native',
-            sort_action='native',
-            sort_mode='multi',
-            column_selectable='single',
-            row_deletable=True,
-            editable=True,
-            row_selectable='multi',
-
-            columns=[{'name': i, 'id': i} for i in df.columns],
-            # Al estilo de la celda le ponemos: texto centrado, con fondos oscuros y letras blancas
-            style_cell={'textAlign': 'center', 'backgroundColor': 'rgb(207, 250, 255)', 'color': 'black'},
-            # Al estilo de la cabecera le ponemos: texto centrado, con fondo azul claro y letras negras
-            style_header={'backgroundColor': 'rgb(45, 93, 255)', 'fontWeight': 'bold', 'color': 'black', 'border': '1px solid black'},
-            style_table={'height': '300px', 'overflowY': 'auto'},
-            style_data={'border': '1px solid black'}
-        ),
-
-        html.Hr(),  # horizontal line
-
-        # Devolvemos el número de filas y columnas del dataframe
-        dbc.Row([
-            dbc.Col([
-                dbc.Alert('El número de Filas del Dataframe es de: {}'.format(df.shape[0]), color="info"),
-            ], width=6),
-            dbc.Col([
-                dbc.Alert('El número de Columnas del Dataframe es de: {}'.format(df.shape[1]), color="info"),
-            ], width=6),
-        ]),
-
-        html.Hr(),
-
-        html.H2(["", dbc.Badge("Evidencia de datos correlacionados", className="ms-1")]),
+        html.P('Estás trabajando con el archivo: {}'.format(filename)),
         dcc.Tab(label='Analisis Correlacional', children=[
             dcc.Graph(
                 id='matriz',
@@ -212,59 +128,41 @@ def parse_contents(contents, filename,date):
                 }
             )
         ]),        
+        dcc.Markdown('''**Selecciona un método de estandarización**'''),
+        dbc.Select(
+            id='select-escale',
+            options=[
+                {'label': 'StandardScaler', 'value': "StandardScaler()"},
+                {'label': 'MinMaxScaler', 'value': "MinMaxScaler()"},
+            ],
+            value="StandardScaler()",
+            placeholder="Selecciona el tipo de estandarización",
+        ),
+        dcc.Markdown('''**Selecciona el número de componentes principales**'''),
+        dbc.Input(
+            id='n_components',
+            type='number',
+            placeholder='None',
+            value=None,
+            min=1,
+            max=100,
+        ),
 
-        dbc.Row([
-            dbc.Col([
-                dcc.Markdown('''**Estandarización de datos**'''),
-                dbc.Select(
-                    id='select-escale',
-                    options=[
-                        {'label': 'StandardScaler', 'value': "StandardScaler()"},
-                        {'label': 'MinMaxScaler', 'value': "MinMaxScaler()"},
-                    ],
-                    value="StandardScaler()",
-                    placeholder="Selecciona el tipo de estandarización",
-                ),
-            ], width=2, align='center'),
-
-            dbc.Col([
-                        dcc.Markdown('''**Número de componentes principales**'''),
-                        dbc.Input(
-                            id='n_components',
-                            type='number',
-                            placeholder='None',
-                            value=None,
-                            min=1,
-                            max=100,
-                        ),
-                    ], width=2, align='center'),
-
-            dbc.Col([
-                dcc.Markdown('''**Porcentaje de relevancia**'''),
-                dbc.Input(
-                    id='relevancia',
-                    type='number',
-                    placeholder='Ingrese el porcentaje de relevancia',
-                    value=0.9,
-                    min=0.75,
-                    max=0.9,
-                ),
-            ], width=2, align='center'),
-
-
-        ], justify='center', align='center'),
+        dcc.Markdown('''** Selecciona el porcentaje de relevancia. Recomendamos un valor entre 0.75 y 0.9**'''),
+        dbc.Input(
+            id='relevancia',
+            type='number',
+            placeholder='Ingrese el porcentaje de relevancia (0 - 1)',
+        ),
 
         html.Br(),
 
-        # Estilizamos el botón con Bootstrap
-        dbc.Button("Click para obtener los componentes principales", color="danger", className="mr-1", id='submit-button-standarized', style={'width': '100%'}),
+        dbc.Button("Aplicar los componentes principales", color="warning", className="mr-1", id='submit-button-standarized', style={'width': '20%'}),
 
         html.Hr(),
 
-        dcc.Tabs([
-            #Gráfica de pastel de los tipos de datos
-            dcc.Tab(label='Matriz estandarizada', style=tab_style, selected_style=tab_selected_style,children=[
-                cardEstandarizacion,
+        # dcc.Tabs([
+            html.H3('Matriz de datos estandarizada', style={'textAlign': 'center'}),
                 dash_table.DataTable(
                     id='DataTableStandarized',
                     columns=[{"name": i, "id": i} for i in df.select_dtypes(include=['float64', 'int64']).columns],
@@ -280,33 +178,33 @@ def parse_contents(contents, filename,date):
                     style_table={'height': '300px', 'overflowY': 'auto'},
                     style_data={'border': '1px solid black'}
                 ),
-
-                html.Hr(),
-
-
-            ]),
-
-            dcc.Tab(label='Varianza explicada (%)', style=tab_style, selected_style=tab_selected_style,children=[
+            html.H3('Varianza explicada en porcentaje (%)', style={'textAlign': 'center'}),
                 dcc.Graph(
                     id='varianza-explicada',
                 ),
-            ]),
-
-            dcc.Tab(label='Número de componentes principales y la varianza acumulada', style=tab_style, selected_style=tab_selected_style,children=[
+            html.H3('Número de componentes principales y la varianza acumulada', style={'textAlign': 'center'}),
                 dcc.Graph(
                     id='varianza',
                 ),
-            ]),
-
-            dcc.Tab(label='Proporción de cargas y selección de variables', style=tab_style, selected_style=tab_selected_style,children=[
-                dbc.Alert('Considerando un mínimo de 50% para el análisis de cargas, se seleccionan las variables basándonos en este gráfico de calor', color="primary"),
-                # Mostramos la gráfica generada en el callback ID = FigComponentes
+            html.H3('Cargas de las variables', style={'textAlign': 'center'}),
                 dcc.Graph(
                     id='FigComponentes',
                 ),
-            ]),
-        ])
+            html.Button("Download CSV", id="btn_csv",
+                        style={'textAlign': 'center', 'width': '30%', 'margin': 'auto'}
+            ),
+            dcc.Download(id="download-dataframe-csv2"),
+            
+        # ])
     ]) #Fin del layout
+
+@callback(
+    Output("download-dataframe-csv2", "data"),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def func(n_clicks):
+    return dcc.send_data_frame(df.to_csv, "mydf.csv")
 
 @callback(Output('output-data-upload-acp', 'children'),
             Input('upload-data', 'contents'),

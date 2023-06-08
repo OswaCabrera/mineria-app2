@@ -76,12 +76,26 @@ routes = {
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
     navbar,
-    dbc.Container(id="page-content", fluid=True)
+    dcc.Loading(
+        id="ls-loading-output-1",
+        type="circle",
+        children=[
+            dbc.Container(id="page-content", fluid=True),
+        ],
+        fullscreen=True,
+    ),
 ])
 
+@app.callback(Output("ls-loading-output-1", "children"), Input("page-content", "value"))
+def input_triggers_spinner(value):
+    time.sleep(1)
+    return value
+
+component = home_component.layout
 
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):
+    global component
     # Obtener el componente correspondiente a la ruta desde el diccionario
     component = routes.get(pathname)
 
