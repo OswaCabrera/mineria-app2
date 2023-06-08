@@ -1,539 +1,716 @@
 import base64
+import datetime
 import io
+# from msilib.schema import Component
+import dash_bootstrap_components as dbc
+import pandas as pd               # Para la manipulación y análisis de datos
+import numpy as np                # Para crear vectores y matrices n dimensionales
+import matplotlib.pyplot as plt   # Para la generación de gráficas a partir de los datos
+import seaborn as sns             # Para la visualización de datos basado en matplotlib         
 import dash
-from dash import dcc, html, Input, Output, callback
 from dash.dependencies import Input, Output, State
-import dash_bootstrap_components as dbc
-import numpy as np
-import plotly.graph_objects as go
-from dash import dash_table
-import pandas as pd
-import dash_bootstrap_components as dbc
-import yfinance as yf
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.tree import export_text
+from dash import dcc, html, dash_table, Input, Output, callback
+import plotly.express as px
+import plotly.graph_objs as go         # Para la visualización de datos basado en plotly
 
-external_stylesheets = [dbc.themes.UNITED, "/assets/styles.css"]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-# Contenedor principal de la página en un Div.
-layout = html.Div(
-    id = "page-content",
-    children=[
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-        # Contenido principal de la aplicación: se divide en 2 columnas: una con contenido explicativo y otra para elementos interactivos.
-        html.Div(
-
-            className="row",
-            children=[
-
-                # Columna de la derecha: parte de la página pensada para mostrar elementos interactivos en la página principal.
-                html.Div(
-                    id = "right-column",
-                    className="four columns",
-                    children = html.Div([
-
-                        html.H4("Carga o elige el dataset para iniciar la regresión con Árboles de Decisión", className= "text-upload"),
-
-                        # Muestra el módulo de carga del dataset.
-                        dcc.Upload(
-                        id = 'upload-data-regtree',
-                        children = html.Div([
-                            'Arrastra aquí el archivo en formato CSV o selecciónalo'
-                        ]),
-
-                    # Por limitación de Dash estos elementos de carga no se pueden modificar desde la hoja de estilos y se debe hacer CSS inline.
-                    style = {
-                        'font-family': 'Acumin',
-                        'width': '50%',
-                        'height': '100%',
-                        'lineHeight': '60px',
-                        'borderWidth': '2px',
-                        'borderStyle': 'solid',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin': '2em auto',
-                        'display': 'grid',
-                        'justify-content': 'center',
-                        'align-items': 'center',
-                        'flex-direction': 'column',
-                        #'borderColor': '#2196F3',
-                        'background-color': '#fEfEfE'
-                    },
-                    multiple = True,
-                    accept = '.csv'
-                ),
-
-                html.Hr(),
-                html.Div(id = 'output-data-upload-regtree'),                
-
-                ]),
-                ),
-                #html.Div(id = 'output-dataset-upload'),
-            ],
-        ),
-    ],
-)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
 
 
-def parse_contents(contents, filename, date):
+tabs_styles = {
+    'height': '44px'
+}
+tab_style = {
+    'borderBottom': '1px solid #d6d6d6',
+    'padding': '6px',
+    'fontWeight': 'bold'
+}
 
+tab_selected_style = {
+    'borderTop': '1px solid #d6d6d6',
+    'borderBottom': '1px solid #d6d6d6',
+    'backgroundColor': 'Black',
+    'color': 'white',
+    'padding': '6px'
+}
+
+layout = html.Div([
+    html.H1('Árboles - Regresión', style={'text-align': 'center'}),
+    dcc.Upload(
+        id='upload-data',
+        children=html.Div([
+            'Arrastra y suelta tu archivo aquí o selecciona uno'
+        ]),
+        style={
+            'width': '100%',
+            'height': '100%',
+            'lineHeight': '60px',
+            'borderWidth': '1px',
+            'borderStyle': 'dashed',
+            'borderRadius': '5px',
+            'textAlign': 'center',
+            'margin': '10px',
+            'display': 'flex',
+            'justify-content': 'center',
+            'align-items': 'center',
+            'flex-direction': 'column'
+        },
+        # Allow multiple files to be uploaded
+        multiple=True,
+        accept='.csv, .txt, .xls, .xlsx'
+    ),
+    html.Div(id='output-data-upload-arboles-regresion'), # output-datatable
+    html.Div(id='output-div'),
+])
+
+
+def parse_contents(contents, filename,date):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
+    global df
     try:
         if 'csv' in filename:
-        # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')), index_col=None)
-            return regtree(df, filename, df.columns)
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            # Hacemos una copia del dataframe original para poder hacer las modificaciones que queramos
+            df_original = df.copy()
+            
         elif 'xls' in filename:
-        # Assume that the user uploaded an excel file
+            # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
-            return regtree(df, filename, df.columns)
     except Exception as e:
         print(e)
         return html.Div([
-            'There was an error processing this file.'
+            'Uy lo siento, no me fue posible cargar tu documento. Aegurate que la extensión sea la correcta.'
         ])
 
-def regtree(df, filename, columns):
-    """
-    retorna: modelo de regresión usando un árbol de decisión regresor para la generación de pronósticos y valores siguientes en series de tiempo.
-
-    """
-    global global_df
-    global_df = df
-
-
-    # Div de visualización en el layout.
     return html.Div([
+        html.P('Estás trabajando con el archivo: {}. Si quieres cambiar de archivo vuelve a cargar otro'.format(filename)),
 
-        dbc.Alert('El archivo cargado es: {}'.format(filename), color="success"),
-        # Solo mostramos las primeras 5 filas del dataframe, y le damos estilo para que las columnas se vean bien
+        html.H3("Tus datos son:" , style={'text-align': 'center'}),
+        html.P(
+            " {} Filas X {} Columnas.".format(df.shape[0], df.shape[1]),
+            style={'text-align': 'center'}
+        ),
+        html.H3("Información acerca de tus variables:", style={'text-align': 'center'}),
         dash_table.DataTable(
+            #Centramos la tabla de datos:
             data=df.to_dict('records'),
             page_size=8,
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': 'rgb(248, 248, 248)'
+                }
+            ],
             filter_action='native',
             sort_action='native',
             sort_mode='multi',
             column_selectable='single',
             row_deletable=True,
-            cell_selectable=True,
             editable=True,
             row_selectable='multi',
-            columns=[{'name': i, 'id': i, "deletable":True} for i in df.columns],
-            style_table={'height': '300px', 'overflowX': 'auto'},
-        ),
-        
-        html.Hr(),  # Línea horizontal
-
-        html.H3(
-            "Elección de Variables Predictoras y Dependiente",
+            columns=[{'name': i, 'id': i} for i in df.columns],
+            style_table={'height': '300px', 'overflowY': 'auto'},
         ),
 
-        html.Div(
-            html.P("Selecciona de la siguiente lista las variables que deseas elegir como predictoras y tu variable target para realizar la regresión.")
-        ),
+        html.Hr(),
 
-        html.Div(
-            children=[
-                dcc.Store(id="original-options", data=[{'label': col, 'value': col} for col in df.columns]),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Variables predictoras", color="primary",
-                                                    id="tooltip-method", style={"cursor": "pointer", "display": "flex", "align-items": "center", "justify-content": "center"},
-                                                    ),
-                                            dbc.Tooltip(
-                                                "Selecciona aquí las variables predictoras de tu análisis.",
-                                                target="tooltip-method"
-                                            ),
-                                        ],
-                                        style={"height": "50px", "padding": "0"},
-                                    ),
-                                    style = {"height": "2.5em"}
-                                ),
-                                dbc.Row(
-                                    dbc.Checklist(
-                                        id='select-predictors',
-                                        options = [{'label': col, 'value': col} for col in df.columns],
-                                        style={"font-size": "small", "display": "grid", "justify-items": "start", "font-family": "Acumin, 'Helvetica Neue', sans-serif", "margin": "-1em 0 0 0"}
-                                    ),
-                                    style={"height": "auto"}
-                                ),
-                            ],
-                            class_name="me-3"
-                        ),
-                        dbc.Col(
-                            [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Variable Regresora", color="primary",
-                                                    id="tooltip-numpc", style={"cursor": "pointer", "display": "flex", "align-items": "center", "justify-content": "center"},
-                                                    ),
-                                            dbc.Tooltip(
-                                                "Selecciona la variable target de tu análisis.",
-                                                target="tooltip-numpc"
-                                            ),
-                                        ],
-                                        style={"height": "auto", "padding": "0"},
-                                    ),
-                                    style = {"height": "2.5em"}
-                                ),
-                                dbc.Row(
-                                    dbc.Checklist(
-                                        id='select-regressor',
-                                        options = [{'label': col, 'value': col} for col in df.columns],
-                                        style={"font-size": "small", "display": "grid", "justify-items": "start", "font-family": "Acumin, 'Helvetica Neue', sans-serif", "margin": "-1em 0 0 0"}
-                                    ),
-                                    style={"font-size":"small", "height": "2em", "font-family": "Acumin, 'Helvetica Neue', sans-serif"}
-                                ),
-                            ],
-                            class_name="me-3"
-                        ),
+        html.H3("Matriz de correlación:", style={'text-align': 'center'}),
+            dcc.Graph(
+                id='matriz',
+                figure={
+                    # Solo se despliega la mitad de la matriz de correlación, ya que la otra mitad es simétrica
+                    'data': [
+                        {'x': df.corr().columns, 'y': df.corr().columns, 'z': df.corr().values, 'type': 'heatmap', 'colorscale': 'RdBu'}
                     ],
-                    style={"justify-content": "between", "height": "100%"}
-                ),
+                    'layout': {
+                        'title': 'Matriz de correlación',
+                        'xaxis': {'side': 'down'},
+                        'yaxis': {'side': 'left'},
+                        # Agregamos el valor de correlación por en cada celda (text_auto = True)
+                        'annotations': [
+                            dict(
+                                x=df.corr().columns[i],
+                                y=df.corr().columns[j],
+                                text=str(round(df.corr().values[i][j], 4)),
+                                showarrow=False,
+                                font=dict(
+                                    color='white' if abs(df.corr().values[i][j]) >= 0.67  else 'black'
+                                )
+                            ) for i in range(len(df.corr().columns)) for j in range(len(df.corr().columns))
+                        ]
+                    }
+                }
+            ),
 
-                        html.Div(
-            children=[
-                dbc.Row(
+        html.Br(),
+        html.H3("Estadísticas descriptivas de tus variables (EDA)", style={'text-align': 'center'}),
+        dbc.Table(
+            # Mostamos el resumen estadístico de las variables de tipo object, con su descripción a la izquierda
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            # Primer columna: nombre de la estadística (count, mean, std, min, 25%, 50%, 75%, max) y las demás columnas: nombre de las columnas (recorremos las columnas del dataframe)
+                            html.Th('Estadística'),
+                            *[html.Th(column) for column in df.describe().columns]
+
+                        ]
+                    )
+                ),
+                html.Tbody(
                     [
-                        dbc.Col(
+                        html.Tr(
                             [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Profundad máxima del árbol", color="primary",
-                                                id="tooltip-percent", style={"cursor":"pointer", "display": "flex", "align-items": "center", "justify-content": "center", "height": "100%"}
-                                            ),
-                                            dbc.Tooltip(
-                                                [
-                                                    dcc.Markdown('''
-                                                        **Profundidad máxima del árbol:**  
-                                                        Coloca aquí el nivel máximo del árbol a generar.
-                                                    ''', style={'text-align': 'left'}),
-                                                ],
-                                                target="tooltip-percent", placement="left", style={"font-size":"10px"},
-                                            ),
-                                        ],
-                                        style={"height":"50px", "padding": "0"},
-                                    ),
-                                ),
-                                dbc.Row(
-                                    dbc.Input(
-                                        id='input-max-depth',
-                                        type='number',
-                                        placeholder='None',
-                                        min=1,
-                                        step=1,
-                                        style={"font-size": "medium"}
-                                    ),
-                                    style={"height":"50px"}
-                                ),
-                            ],
-                            class_name="me-3"
+                                html.Td('count'),
+                                *[html.Td(df.describe().loc['count'][column]) for column in df.describe().columns]
+                            ]
                         ),
-
-                        dbc.Col(
+                        html.Tr(
                             [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Muestras mínimas de división", color="primary",
-                                                id="tooltip-div", style={"cursor":"pointer", "display": "flex", "align-items": "center", "justify-content": "center", "height": "100%"}
-                                            ),
-                                            dbc.Tooltip(
-                                                [
-                                                    dcc.Markdown('''
-                                                        **Muestras mínimas de división**  
-                                                        Coloca aquí el mínimo de muestras para dividir nodos de decisión.
-                                                    ''', style={'text-align': 'left'}),
-                                                ],
-                                                target="tooltip-div", placement="left", style={"font-size":"10px"},
-                                            ),
-                                        ],
-                                        style={"height":"50px", "padding": "0"},
-                                    ),
-                                ),
-                                dbc.Row(
-                                    dbc.Input(
-                                        id='input-min-samples-split',
-                                        type='number',
-                                        placeholder='None',
-                                        min=1,
-                                        step=1,
-                                        style={"font-size": "medium"}
-                                    ),
-                                    style={"height":"50px"}
-                                ),
-                            ],
-                            class_name="me-3"
+                                html.Td('mean'),
+                                *[html.Td(df.describe().loc['mean'][column]) for column in df.describe().columns]
+                            ]
                         ),
-
-                        dbc.Col(
+                        html.Tr(
                             [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Muestras mínimas por hoja", color="primary",
-                                                id="tooltip-leaf", style={"cursor":"pointer", "display": "flex", "align-items": "center", "justify-content": "center", "height": "100%"}
-                                            ),
-                                            dbc.Tooltip(
-                                                [
-                                                    dcc.Markdown('''
-                                                        **Muestras mínimas de división**  
-                                                        Coloca aquí el mínimo de muestras en las hojas del árbol a generar.
-                                                    ''', style={'text-align': 'left'}),
-                                                ],
-                                                target="tooltip-leaf", placement="left", style={"font-size":"10px"},
-                                            ),
-                                        ],
-                                        style={"height":"50px", "padding": "0"},
-                                    ),
-                                ),
-                                dbc.Row(
-                                    dbc.Input(
-                                        id='input-min-samples-leaf',
-                                        type='number',
-                                        placeholder='None',
-                                        min=1,
-                                        step=1,
-                                        style={"font-size": "medium"}
-                                    ),
-                                    style={"height":"50px"}
-                                ),
-                            ],
-                            class_name="me-3"
+                                html.Td('std'),
+                                *[html.Td(df.describe().loc['std'][column]) for column in df.describe().columns]
+                            ]
                         ),
-
-                        dbc.Col(
+                        html.Tr(
                             [
-                                dbc.Row(
-                                    html.Div(
-                                        [
-                                            dbc.Badge("ⓘ Tamaño de la muestra", color="primary",
-                                                id="tooltip-sample", style={"cursor":"pointer", "display": "flex", "align-items": "center", "justify-content": "center", "height": "100%"}
-                                            ),
-                                            dbc.Tooltip(
-                                                [
-                                                    dcc.Markdown('''
-                                                        **Muestras mínimas de división**  
-                                                        Coloca aquí el mínimo de muestras en las hojas del árbol a generar.
-                                                    ''', style={'text-align': 'left'}),
-                                                ],
-                                                target="tooltip-sample", placement="left", style={"font-size":"10px"},
-                                            ),
-                                        ],
-                                        style={"height":"50px", "padding": "0"},
-                                    ),
-                                ),
-                                dbc.Row(
-                                    dbc.Input(
-                                        id='input-test-size',
-                                        type='number',
-                                        placeholder='None',
-                                        value=0.2,
-                                        min=0.2,
-                                        max = 0.5,
-                                        step=0.1,
-                                        style={"font-size": "medium"}
-                                    ),
-                                    style={"height":"50px"}
-                                ),
-                            ],
-                            class_name="me-3"
+                                html.Td('min'),
+                                *[html.Td(df.describe().loc['min'][column]) for column in df.describe().columns]
+                            ]
                         ),
-                    ],
-                    style={"justify-content": "between", "height": "100%"}
-                ),
+                        html.Tr(
+                            [
+                                html.Td('25%'),
+                                *[html.Td(df.describe().loc['25%'][column]) for column in df.describe().columns]
+                            ]
+                        ),
+                        html.Tr(
+                            [
+                                html.Td('50%'),
+                                *[html.Td(df.describe().loc['50%'][column]) for column in df.describe().columns]
+                            ]
+                        ),
+                        html.Tr(
+                            [
+                                html.Td('75%'),
+                                *[html.Td(df.describe().loc['75%'][column]) for column in df.describe().columns]
+                            ]
+                        ),
+                        html.Tr(
+                            [
+                                html.Td('max'),
+                                *[html.Td(df.describe().loc['max'][column]) for column in df.describe().columns]
+                            ]
+                        ),
+                    ]
+                )
             ],
-            style={"font-size":"20px", "margin":"30px 0"}
+
+            bordered=True,
+            hover=True,
+            responsive=True,
+            striped=True,
+            style={'textAlign': 'center', 'width': '100%'}
         ),
 
+
+        html.Br(),
+        dbc.Table(
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            # Primer columna: nombre de la columna y las demás columnas: nombre de las estadísticas (count, mean, std, min, 25%, 50%, 75%, max)
+                            html.Th('Variable'),
+                            html.Th('Tipo de dato'),
+                            html.Th('Count'),
+                            html.Th('Valores nulos'),
+                            html.Th('Valores únicos'),
+                            html.Th('Datos más frecuentes'),
+                            html.Th('Datos menos frecuentes'),
+                        ]
+                    )
+                ),
+                html.Tbody(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(column), # Primera columna: nombre de la columna
+                                html.Td(
+                                    str(df.dtypes[column]),
+                                ),
+
+                                # Count del tipo de dato (y porcentaje)
+                                html.Td(
+                                    [
+                                        html.P("{}".format(df[column].count())),
+                                    ]
+                                ),
+
+                                html.Td(
+                                    df[column].isnull().sum(),
+                                ),
+
+                                #Valores únicos
+                                html.Td(
+                                    df[column].nunique(),
+                                ),
+
+                                # Top valores más frecuentes
+                                html.Td(
+                                    [
+                                        html.P("{}".format(df[column].value_counts().index[0])+" ("+str(round(df[column].value_counts().values[0]*1,2))+")"),
+                                    ]
+                                ),
+
+                                # Top valores menos frecuentes
+                                html.Td(
+                                    [
+                                        html.P("{}".format(df[column].value_counts().index[-1])+" ("+str(round(df[column].value_counts().values[-1]*1,2))+")"),
+                                    ]
+                                ),
+                            ]
+                        ) for column in df.dtypes.index
+                    ]
+                )
+            ],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            striped=True,
+            # Texto centrado y tabla alineada al centro de la página
+            style={'textAlign': 'center', 'width': '100%'}
+        ),
+
+            html.Br(),
+            html.H3("Creación del modelo", style={'text-align': 'center'}),
+                dbc.Badge("Variable Clase", color="light", className="mr-1", text_color="dark"),
+                dcc.Dropdown(
+                    [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
+                    value=df[[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]].columns[0],
+                    id='Y_Clase_Arbol_Regresion',
+                ),
                 
-                dbc.Row(
-                    dbc.Col(
-                        dbc.Button("Generar árbol", id="submit-button", color="primary", className="mt-3", style={"display": "grid", "height": "80%", "align-items": "center", "margin": "0 auto"}),
-                        width={"size": 2, "offset": 5},
-                    ),
-                    className="mt-3",
+                dbc.Badge("Variables Predictoras", color="light", className="mr-1", text_color="dark"),
+                dcc.Dropdown(
+                    # En las opciones que aparezcan en el Dropdown, queremos que aparezcan todas las columnas numéricas, excepto la columna Clase
+                    [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
+                    value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:],
+                    id='X_Clase_Arbol_Regresion',
+                    multi=True,
                 ),
-                html.Div(id="output-data", style = {"margin-top": "1em"}),
-            ],
-            className="mt-4",
-        )
 
-    ])
+                # Salto de línea
+                html.Br(),
+
+                html.H2("Ajuste del algoritmo", style={'text-align': 'center'}),
+                html.Br(),
+
+                html.P("Criterio: Puede ser gini (índice de Gini) y entropy (entropía) en clasificación."),
+                html.P("Divisor: Indica el criterio que se utilizará para dividir los nodos. Puede ser Squared Error, Friedman MSE, Absolute Error, Poisson"),
+                html.P("Profundidad: Indica la máxima profundidad que puede alcanzar el árbol. "),
+                html.P("Muestras-Dividir: Indica la cantidad mínima de muestras requeridas para que un nodo de decisión pueda dividirse."),
+                html.P("Muestras-Hoja: Indica la cantidad mínima de muestras que debe haber en una hoja del árbol. "),
+
+                dcc.Markdown('''**Datos para entrenar**'''),
+                dcc.Input(
+                    id='criterio_division_ADR',
+                    type='number',
+                    placeholder='None',
+                    value=0.2,
+                    min=0.2,
+                    max=0.3,
+                    step=0.05,
+                ),
+
+                dcc.Markdown('''**Criterio**'''),
+                dbc.Select(
+                    id='criterion_ADR',
+                    options=[
+                        {'label': 'Squared Error', 'value': 'squared_error'},
+                        {'label': 'Friedman MSE', 'value': 'friedman_mse'},
+                        {'label': 'Absolute Error', 'value': 'absolute_error'},
+                        {'label': 'Poisson', 'value': 'poisson'},
+                    ],
+                    value='squared_error',
+                    placeholder='None',
+                ),
+
+                dcc.Markdown('''**Divisor**'''),
+                dbc.Select(
+                    id='splitter_ADR',
+                    options=[
+                        {'label': 'Best', 'value': 'best'},
+                        {'label': 'Random', 'value': 'random'},
+                    ],
+                    value='best',
+                    placeholder='None',
+                ),
+
+                dcc.Markdown('''**Profundidad**'''),
+                dbc.Input(
+                    id='max_depth_ADR',
+                    type='number',
+                    placeholder='None',
+                    value=7,
+                    min=1,
+                    max=100,
+                    step=1,
+                ),
+
+                dcc.Markdown('''**Muestras - Dividir**'''),
+                dbc.Input(
+                    id='min_samples_split_ADR',
+                    type='number',
+                    placeholder='None',
+                    value=2,
+                    min=1,
+                    max=100,
+                    step=1,
+                ),
+
+                dcc.Markdown('''**Muestras - Hojas**'''),
+                dbc.Input(
+                    id='min_samples_leaf_ADR',
+                    type='number',
+                    placeholder='None',
+                    value=1,
+                    min=1,
+                    max=100,
+                    step=1,
+                ),
+
+                html.Br(),
+
+                # Estilizamos el botón con Bootstrap
+                dbc.Button("Entrenar", className="mr-1", id='submit-button-arbol-regresion', style={'width': '100%'}),
+
+                html.Hr(),
+
+                html.H2("Comparación Valores Reales y de Predicción", style={'text-align': 'center'}),
+                # Mostramos la matriz de confusión
+                dcc.Graph(id='matriz-arbol-regresion'),
+
+                html.Hr(),
+
+                html.H2("Reporte de la efectividad", style={'text-align': 'center'}),
+                # Mostramos el reporte de clasificación
+                html.Div(id='clasificacion-arbol-regresion'),
+
+                # Mostramos la importancia de las variables
+                dcc.Graph(id='importancia-arbol-regresion'),
+
+                html.Hr(),
+
+                dbc.Button(
+                    "Árbol obtenido", id="open-body-scroll-ADR", n_clicks=0, color="primary", className="mr-1", style={'width': '100%'}
+                ),
+
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle("Árbol de Decisión obtenido")),
+                        dbc.ModalBody(
+                            [
+                                html.Div(id='arbol-arbol-regresion'),
+                            ]
+                        ),
+                        dbc.ModalFooter(
+                            dbc.Button(
+                                "Close",
+                                id="close-body-scroll-ADR",
+                                className="ms-auto",
+                                n_clicks=0,
+                            )
+                        ),
+                    ],
+                    id="modal-body-scroll-ADR",
+                    scrollable=True,
+                    is_open=False,
+                    size='xl',
+                ),
+
+                html.Hr(),
+
+                html.Div(id='button-arbol-svg-ar'),
+
+            dcc.Tab(label='Nuevos Pronósticos', style=tab_style, selected_style=tab_selected_style, children=[
+                html.Div(id="output-regresion-arbol-regresion-Final"),
+
+                html.Div(id='valor-regresion2'),
+                html.Div(id='valor-regresion'),
+
+                html.Hr(),
+
+                dcc.Store(id='memory-output-arbol-regresion', data=df.to_dict('records')),
+            ]),
+    ]) #Fin del layout
+
+
+@callback(Output('output-data-upload-arboles-regresion', 'children'),
+            Input('upload-data', 'contents'),
+            State('upload-data', 'filename'),
+            State('upload-data', 'last_modified'))
+def update_output(list_of_contents, list_of_names,list_of_dates):
+    if list_of_contents is not None:
+        children = [
+            parse_contents(c, n,d) for c, n,d in
+            zip(list_of_contents, list_of_names,list_of_dates)]
+        return children
 
 @callback(
-    Output("output-data-upload-regtree", "children"),
-    [Input("upload-data-regtree", "contents")],
-    [State("upload-data-regtree", "filename")],
-)
-def update_output(list_of_contents, list_of_names):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return None
-    if ctx.triggered[0]["prop_id"] == "upload-data-regtree.contents":
-        if list_of_contents is not None:
-            children = [
-                parse_contents(c, n) for c, n in zip(list_of_contents, list_of_names)
-            ]
-            return children
-
-
-def create_comparison_chart(Y_test, Y_Predicted):
+    Output('indicator_graphic_regression', 'figure'),
+    Input('xaxis_column-arbol-regresion', 'value'),
+    Input('yaxis_column-arbol-regresion', 'value'))
+def update_graph2(xaxis_column2, yaxis_column2):
+    # Conforme se van seleccionando las variables, se van agregando a la gráfica de líneas
     fig = go.Figure()
+    for i in yaxis_column2:
+        fig.add_trace(go.Scatter(x=df[xaxis_column2], y=df[i], mode='lines', name=i))
+    fig.update_layout(xaxis_rangeslider_visible=True,showlegend=True, xaxis_title=xaxis_column2, yaxis_title='Valores',
+                    font=dict(family="Courier New, monospace", size=18, color="black"))
+    fig.update_traces(mode='markers+lines')
 
-    fig.add_trace(go.Scatter(y=Y_test.flatten(), mode='lines', name='Real', marker=dict(color='red', symbol='cross')))
-    fig.add_trace(go.Scatter(y=Y_Predicted, mode='lines', name='Estimado', marker=dict(color='green', symbol='cross')))
-
-    fig.update_layout(
-        title="Pronóstico de las acciones",
-        xaxis_title="Fecha",
-        yaxis_title="Precio de las acciones",
-        legend_title="Valores",
-        showlegend=True,
-        plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(
-            gridcolor='lightgrey',
-            zerolinecolor='lightgrey'
-        ),
-        yaxis=dict(
-            gridcolor='lightgrey',
-            zerolinecolor='lightgrey'
-        )
-    )
     return fig
 
-def generate_decision_tree(X_train, X_test, Y_train, Y_test, max_depth=2, min_samples_split=4, min_samples_leaf=4):
-    reg_tree = DecisionTreeRegressor(
-        random_state=0,
-        max_depth=max_depth,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf
-    )
-    reg_tree.fit(X_train, Y_train)
-    Y_Predicted = reg_tree.predict(X_test)
-    comparison_df = pd.DataFrame({"Y_Real": Y_test.flatten(), "Y_Pronosticado": Y_Predicted})
+@callback(
+    Output('matriz-arbol-regresion', 'figure'),
+    Output('clasificacion-arbol-regresion', 'children'),
+    Output('importancia-arbol-regresion', 'figure'),
+    Output('arbol-arbol-regresion', 'children'),
+    Output('output-regresion-arbol-regresion-Final', 'children'),
+    Output('valor-regresion2', 'children'),
+    Output('button-arbol-svg-ar', 'children'),
+    Input('submit-button-arbol-regresion', 'n_clicks'),
+    State('X_Clase_Arbol_Regresion', 'value'),
+    State('Y_Clase_Arbol_Regresion', 'value'),
+    State('criterio_division_ADR', 'value'),
+    State('criterion_ADR', 'value'),
+    State('splitter_ADR', 'value'),
+    State('max_depth_ADR', 'value'),
+    State('min_samples_split_ADR', 'value'),
+    State('min_samples_leaf_ADR', 'value'))
+def regresion(n_clicks, X_Clase, Y_Clase, criterio_division,criterion, splitter, max_depth, min_samples_split, min_samples_leaf):
+    if n_clicks is not None:
+        global X
+        global X_Clase2
+        X_Clase2 = X_Clase
+        X = np.array(df[X_Clase])
+        Y = np.array(df[Y_Clase])
 
-    # Devuelve también el árbol de regresión y sus parámetros
-    tree_parameters = {
-        "criterion": reg_tree.criterion,
-        "feature_importances": reg_tree.feature_importances_,
-        "MAE": mean_absolute_error(Y_test, Y_Predicted),
-        "MSE": mean_squared_error(Y_test, Y_Predicted),
-        "RMSE": mean_squared_error(Y_test, Y_Predicted, squared=False),
-        "score": r2_score(Y_test, Y_Predicted),
-    }
-    return comparison_df, reg_tree, tree_parameters, Y_Predicted
+        global PronosticoAD
 
-def generate_decision_treeS(X_train, X_test, Y_train, Y_test):
-    reg_tree = DecisionTreeRegressor(
-        random_state=0,
-    )
-    reg_tree.fit(X_train, Y_train)
-    Y_Predicted = reg_tree.predict(X_test)
-    comparison_df = pd.DataFrame({"Y_Real": Y_test.flatten(), "Y_Pronosticado": Y_Predicted})
+        from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+        from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+        from sklearn import model_selection
 
-    # Devuelve también el árbol de regresión y sus parámetros
-    tree_parameters = {
-        "criterion": reg_tree.criterion,
-        "feature_importances": reg_tree.feature_importances_,
-        "MAE": mean_absolute_error(Y_test, Y_Predicted),
-        "MSE": mean_squared_error(Y_test, Y_Predicted),
-        "RMSE": mean_squared_error(Y_test, Y_Predicted, squared=False),
-        "score": r2_score(Y_test, Y_Predicted),
-    }
-    return comparison_df, reg_tree, tree_parameters, Y_Predicted
+        X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, 
+                                                                                test_size = criterio_division, 
+                                                                                random_state = 0,
+                                                                                shuffle = True)
 
-def create_input_form(predictors):
-    input_form = []
-    for predictor in predictors:
-        input_form.append(
-            html.Div(
+        #Se entrena el modelo a partir de los datos de entrada
+        PronosticoAD = DecisionTreeRegressor(criterion = criterion, splitter = splitter, max_depth = max_depth, min_samples_split = min_samples_split, min_samples_leaf = min_samples_leaf, random_state = 0)
+        PronosticoAD.fit(X_train, Y_train)
+
+        #Se genera el pronóstico
+        Y_PronosticoArbol = PronosticoAD.predict(X_test)
+        
+        ValoresArbol = pd.DataFrame(Y_test, Y_PronosticoArbol)
+
+        # Comparación de los valores reales y los pronosticados en Plotly
+        fig = px.line(Y_test, color_discrete_sequence=['green'])
+        fig.add_scatter(y=Y_PronosticoArbol, name='Y_Pronostico', mode='lines', line=dict(color='red'))
+        fig.update_layout(title='Comparación de valores reales vs Pronosticados',xaxis_rangeslider_visible=True)
+        #Cambiamos el nombre de la leyenda
+        fig.update_layout(legend_title_text='Valores')
+        fig.data[0].name = 'Valores Reales'
+        fig.data[1].name = 'Valores Pronosticados'
+        # Renombramos el nombre de las leyendas:
+        fig.update_traces(mode='markers+lines') #Agregamos puntos a la gráfica
+        
+        
+        criterio = PronosticoAD.criterion
+        profundidad = PronosticoAD.get_depth()
+        hojas = PronosticoAD.get_n_leaves()
+        splitter_report = PronosticoAD.splitter
+        nodos = PronosticoAD.get_n_leaves() + PronosticoAD.get_depth()
+        #MAE:
+        MAEArbol = mean_absolute_error(Y_test, Y_PronosticoArbol)
+        #MSE:
+        MSEArbol = mean_squared_error(Y_test, Y_PronosticoArbol)
+        #RMSE:
+        RMSEArbol = mean_squared_error(Y_test, Y_PronosticoArbol, squared=False)
+        
+        global ScoreArbol
+        ScoreArbol = r2_score(Y_test, Y_PronosticoArbol)
+        
+
+        # Importancia de las variables
+        importancia = pd.DataFrame({'Variable': list(df[X_Clase].columns),
+                            'Importancia': PronosticoAD.feature_importances_}).sort_values('Importancia', ascending=False)
+
+        # Graficamos la importancia de las variables
+        fig2 = px.bar(importancia, x='Variable', y='Importancia', color='Importancia', color_continuous_scale='Bluered', text='Importancia')
+        fig2.update_layout(title_text='Importancia de las variables', xaxis_title="Variables", yaxis_title="Importancia")
+        fig2.update_traces(texttemplate='%{text:.2}', textposition='outside')
+        fig2.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+        fig2.update_layout(legend_title_text='Importancia de las variables')
+
+        # Generamos en texto el árbol de decisión
+        from sklearn.tree import export_text
+        r = export_text(PronosticoAD, feature_names=list(df[X_Clase].columns))
+        
+        return fig, html.Div([
+            dbc.Table(
                 [
-                    html.Label(predictor),
-                    dcc.Input(
-                        type="number",
-                        id=f"input-{predictor}",  # Agrega el atributo id a la entrada
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th("Score"),
+                                html.Th("MAE"),
+                                html.Th("MSE"),
+                                html.Th("RMSE"),
+                                html.Th("Criterio"),
+                                html.Th("Divisor"),
+                                html.Th("Profundidad"),
+                                html.Th("Maxima Profundidad"),
+                                html.Th("Muestras - Dividir"),
+                                html.Th("Muestras - Hoja"),
+                                html.Th("Nodos"),
+                                html.Th("Hojas"),
+                            ]
+                        )
+                    ),
+                    html.Tbody(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td(str(round(ScoreArbol, 6)*100) + '%'),
+                                    html.Td(str(round(MAEArbol, 6))),
+                                    html.Td(str(round(MSEArbol, 6))),
+                                    html.Td(str(round(RMSEArbol, 6))),
+                                    html.Td(criterio),
+                                    html.Td(splitter_report),
+                                    html.Td(profundidad),
+                                    html.Td(str(max_depth)),
+                                    html.Td(min_samples_split),
+                                    html.Td(min_samples_leaf),
+                                    html.Td(nodos),
+                                    html.Td(PronosticoAD.get_n_leaves()),
+                                ]
+                            ),
+                        ]
                     ),
                 ],
-                className="form-group",
-            )
-        )
-    return input_form
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                style={'width': '100%', 'text-align': 'center'},
+                class_name='table table-hover table-bordered table-striped',
+            ),
+
+
+        ]), fig2, html.Div([
+            dbc.Alert(r, color="success", style={'whiteSpace': 'pre-line'}, className="mb-3")
+        ]), html.Div([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Input(id='values_X1', type="number", placeholder=df[X_Clase].columns[0],style={'width': '100%'}),
+                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[0])),
+                    dbc.Input(id='values_X2', type="number", placeholder=df[X_Clase].columns[1],style={'width': '100%'}),
+                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[1])),
+                    dbc.Input(id='values_X3', type="number", placeholder=df[X_Clase].columns[2],style={'width': '100%'}),
+                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[2])),
+                    dbc.Input(id='values_X4', type="number", placeholder=df[X_Clase].columns[3],style={'width': '100%'}),
+                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[3])),
+                    dbc.Input(id='values_X5', type="number", placeholder=df[X_Clase].columns[4],style={'width': '100%'}),
+                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[4])),
+                ], width=6),
+            ])
+
+        ]), html.Div([
+                dbc.Button("Nuevo pronóstico", id="collapse-button", className="mb-3", color="primary"),
+                dbc.Collapse(
+                    dbc.Card(dbc.CardBody([
+                        html.Div(id='output-container-button'),
+                    ])),
+                    id="collapse",
+                ),
+        ]), html.Div([
+            dbc.Button(id='btn-ar', children='Árbol en formato PDF', color="dark", className="mr-1", style={'width': '100%', 'text-align': 'center'}),
+            dcc.Download(id="download-ar"),
+        ]),
+
+    elif n_clicks is None:
+        import dash.exceptions as de
+        raise de.PreventUpdate
+
+# make sure that x and y values can't be the same variable
+def filter_options(v):
+    """Disable option v"""
+    return [
+        {"label": col, "value": col, "disabled": col == v}
+        for col in [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]
+    ]
+
+# functionality is the same for both dropdowns, so we reuse filter_options
+callback(Output("X_Clase_Arbol_Regresion", "options"), [Input("Y_Clase_Arbol_Regresion", "value")])(
+    filter_options
+)
+callback(Output("Y_Clase_Arbol_Regresion", "options"), [Input("X_Clase_Arbol_Regresion", "value")])(
+    filter_options
+)
+
+@callback(
+    Output('valor-regresion', 'children'),
+    Input('collapse-button', 'n_clicks'),
+    # Mostar los valores de los inputs
+    State('memory-output-arbol-regresion', 'data'),
+    State('values_X1', 'value'),
+    State('values_X2', 'value'),
+    State('values_X3', 'value'),
+    State('values_X4', 'value'),
+    State('values_X5', 'value'),
+)
+def regresionFinal(n_clicks, data, values_X1, values_X2, values_X3, values_X4, values_X5):
+    if n_clicks is not None:
+        if values_X1 is None or values_X2 is None or values_X3 is None or values_X4 is None or values_X5 is None:
+            return html.Div([
+                dbc.Alert('Debe ingresar todos los valores de las variables', color="danger")
+            ])
+        else:
+            XPredict = pd.DataFrame([[values_X1, values_X2, values_X3, values_X4, values_X5]])
+
+            clasiFinal = PronosticoAD.predict(XPredict)
+            return html.Div([
+                dbc.Alert('El valor pronosticado con un árbol de decisión que tiene una Exactitud de: ' + str(round(ScoreArbol, 4)*100) + '% es: ' + str(clasiFinal[0]), color="success", style={'textAlign': 'center'})
+            ])
 
 
 @callback(
-    [Output("select-predictors", "options"), Output("select-regressor", "options")],
-    [Input("select-predictors", "value"), Input("select-regressor", "value")],
-    [State("original-options", "data")]
+    Output("modal-body-scroll-ADR", "is_open"),
+    [
+        Input("open-body-scroll-ADR", "n_clicks"),
+        Input("close-body-scroll-ADR", "n_clicks"),
+    ],
+    [State("modal-body-scroll-ADR", "is_open")],
 )
-def update_checklist_options(selected_predictors, selected_regressor, original_options):
-    if selected_predictors is None:
-        selected_predictors = []
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
 
-    if selected_regressor is None:
-        selected_regressor = ""
-
-    updated_predictors_options = [
-        {**option, "disabled": option["value"] == selected_regressor} for option in original_options
-    ]
-
-    updated_regressor_options = [
-        {**option, "disabled": option["value"] in selected_predictors} for option in original_options
-    ]
-
-
-    return updated_predictors_options, updated_regressor_options
-
-
-@callback(Output("input-form", "children"), Input("submit-button", "n_clicks"))
-def update_input_form(n_clicks):
-    if n_clicks is None:
-        return ""
-    return create_input_form(global_predictors)
-
-def predict_new_values(reg_tree, predictors, input_values):
-    input_data = pd.DataFrame(input_values, columns=predictors)
-    prediction = reg_tree.predict(input_data)
-    return prediction
-
-@callback(
-    Output("prediction-result", "children"),
-    Input("predict-button", "n_clicks"),
-    State("input-form", "children"),
-)
-def show_prediction(n_clicks, input_form):
-    if n_clicks is None or input_form is None:
-        return ""
-
-    input_values = {}
-    all_states = dash.callback_context.states
-    for child in input_form:
-        label = child['props']['children'][0]['props']['children']
-        if label in global_predictors:
-            input_id = child['props']['children'][1]['props']['id']
-            try:
-                # Agrega el id del campo de entrada a all_states
-                all_states[f"{input_id}.value"] = child['props']['children'][1]['props']['value']
-                input_values[label] = float(all_states[f"{input_id}.value"])
-            except KeyError:
-                print(f"Error: No se encontró la clave '{input_id}.value' en dash.callback_context.states")
-                print("Valores de entrada:", input_values)
-                print("Claves presentes en dash.callback_context.states:", dash.callback_context.states.keys())
-
-    prediction = predict_new_values(global_reg_tree, global_predictors, [input_values])
-    return f"La predicción con base en los valores introducidos es: {prediction[0]:.2f}"
 
 @callback(
     Output("download-ar", "data"),
@@ -544,181 +721,12 @@ def generar_arbol_svg(n_clicks):
     import graphviz
     from sklearn.tree import export_graphviz
 
-    Elementos = export_graphviz(global_reg_tree,
-                            feature_names = global_predictors,
+    Elementos = export_graphviz(PronosticoAD,
+                            feature_names = df[X_Clase2].columns,
                             filled = True,
                             rounded = True,
                             special_characters = True)
     Arbol = graphviz.Source(Elementos)
     Arbol.format = 'pdf'
 
-    return dcc.send_file(Arbol.render(filename='TreeGraph', view=True))
-
-@callback(
-    Output("output-data", "children"),
-    Input("submit-button", "n_clicks"),
-    State("select-predictors", "value"),
-    State("select-regressor", "value"),
-    State("input-max-depth", "value"),
-    State("input-min-samples-split", "value"),
-    State("input-min-samples-leaf", "value"),
-    State("input-test-size", "value")
-)
-def split_data(n_clicks, predictors, regressor, max_depth, min_samples_split, min_samples_leaf, test_size=0.2):
-    global global_df
-    global global_predictors
-    global global_regressor
-
-    if n_clicks is None:
-        return ""
-
-    if predictors is None or regressor is None:
-        return "Por favor, seleccione las variables predictoras y la variable regresora."
-
-    if global_df is None:
-        return "No se ha cargado ningún dataset."
-
-    global_predictors = predictors
-    global_regressor = regressor
-    print(global_predictors)
-    print(global_regressor)
-    print(global_df)
-    # Resto del código
-
-    X = np.array(global_df[global_predictors])
-    global global_X 
-    global global_Y
-    global_X = X
-    print(X)
-    print(global_df[global_regressor])
-    Y = np.array(global_df[global_regressor])
-    global_Y = Y 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = test_size, random_state = 0, shuffle = True)
-    
-    if max_depth is None and min_samples_split is None and min_samples_leaf is None:
-        comparison_df, reg_tree, tree_parameters, Y_Predicted = generate_decision_treeS(
-            X_train, X_test, Y_train, Y_test
-        )
-    else:
-        comparison_df, reg_tree, tree_parameters, Y_Predicted = generate_decision_tree(
-            X_train, X_test, Y_train, Y_test, max_depth, min_samples_split, min_samples_leaf
-        )
-
-    global global_reg_tree 
-    global_reg_tree = reg_tree
-    comparison_chart = create_comparison_chart(Y_test, Y_Predicted)
-
-    
-    comparison_table = dash_table.DataTable(
-        data=comparison_df.to_dict('records'),
-        columns=[{'name': i, 'id': i} for i in comparison_df.columns],
-        style_table={'height': '300px', 'overflowX': 'auto'},
-    )
-
-    # Crea una tabla con los parámetros del árbol
-    parameters_list = [
-        {"parameter": key, "value": value}
-        for key, values in tree_parameters.items()
-        for value in (values if isinstance(values, (list, np.ndarray)) else [values])
-    ]
-    parameters_df = pd.DataFrame(parameters_list)
-    parameters_table = dash_table.DataTable(
-        data=parameters_df.to_dict('records'),
-        columns=[{'name': i, 'id': i} for i in parameters_df.columns],
-        style_table={'overflowX': 'auto', "border": "none"},
-    )
-
-    importance_df = pd.DataFrame({'Variable': predictors, 'Importancia': tree_parameters['feature_importances']}).sort_values('Importancia', ascending=False)
-    importance_table = dash_table.DataTable(
-        data=importance_df.to_dict('records'),
-        columns=[{'name': i, 'id': i} for i in importance_df.columns],
-        style_table={'overflowX': 'auto'},
-    )
-
-    tree_rules = export_text(reg_tree, feature_names=predictors)
-    tree_rules_container = html.Div(
-        children=[html.Pre(tree_rules)],
-        style={'height': '20em', 'overflowY': 'scroll', 'border': '1px solid', 'padding': '10px'},
-    )
-
-    new_forecasts_section = html.Div(
-        [
-            html.H3("Generar nuevos pronósticos"),
-            html.P("Introduce los valores de las variables predictoras:"),
-            html.Div(id="input-form"),
-            html.Button("Predecir", id="predict-button", className="mt-3"),
-            html.Div(id="prediction-result", className="mt-4"),
-        ],
-        className="mt-4",
-    )
-
-
-    return html.Div(
-            [
-                dbc.Tabs(
-                    [
-                        dbc.Tab(
-                            children=[
-                                    html.H5("Los parámetros del árbol generado son los siguientes:"),
-                                    parameters_table,
-                                    html.Br(),
-                                    html.H5("Se han obtenido los siguiente valores de pronóstico en el set de entrenamiento, los cuales se comparan con los valores reales:"),
-                                    comparison_table,
-                                    html.Br(),
-                                    html.H5("A continuación se especifica la importancia numérica [0-1] de las variables predictoras en el modelo construido:"),
-                                    importance_table,
-
-                            ],
-                            label="Parámetros del Árbol de Decisión", tab_id="tab-1", tab_style={"width": "auto"}),
-
-                        dbc.Tab(
-                            children=[
-                                html.H5("El árbol fue construido de con las siguientes reglas:"),
-                                tree_rules_container,
-                                html.Br(),
-                                html.H5("A continuación, puede descargar el árbol generado con el fin de identificar si es necesario llevar a cabo un proceso de podado. Para esto, puede modificar los parámetros de generación según sea necesario."),
-                                html.Br(),
-                                html.Div([
-                                    dbc.Row(
-                                        dbc.Col(
-                                            html.Div([
-                                                dbc.Button("Descargar Árbol", id="btn-ar", color="primary", className="mt-3", style={"display": "grid", "height": "80%", "align-items": "center", "margin": "0 auto"}),
-                                                dcc.Download(id="download-ar")
-                                            ]),
-                                            width={"size": 2, "offset": 5},
-                                        ),
-                                        className="mt-3",
-                                    ),
-                                ]),
-
-                            ],
-                            label="Reglas del árbol y Gráfica", tab_id="tab-2", tab_style={"width": "auto"}),
-
-
-                        dbc.Tab(
-                            children=[
-
-                                    html.H5("El siguiente gráfico permite comparar los valores estimados por el árbol de decisión contra los valores reales de prueba:"),
-                                    dcc.Graph(figure=comparison_chart),
-
-                            ],
-                            label="Comparación entre Valores reales y Predecidos", tab_id="tab-3", tab_style={"width": "auto"}
-                        ),
-
-                        dbc.Tab(
-                            children=[
-
-                                    new_forecasts_section
-
-                            ],
-                            label="Nuevos Pronósticos", tab_id="tab-4", tab_style={"width": "auto"}
-
-                        ),
-
-                    ],
-                    id="tabs",
-                    active_tab="tab-1",
-                    style={"margin-top": "45px"}
-                ),
-            ],
-        )
+    return dcc.send_file(Arbol.render(filename='ArbolAR', view=False))
