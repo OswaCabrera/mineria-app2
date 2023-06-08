@@ -294,18 +294,18 @@ def parse_contents(contents, filename,date):
 
             html.Br(),
             html.H3("Creación del modelo", style={'text-align': 'center'}),
-                dbc.Badge("Variable Clase", color="light", className="mr-1", text_color="dark"),
+                html.H3("Selecciona la variable clase"),
                 dcc.Dropdown(
                     [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
-                    value=df[[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]].columns[0],
+                    # value=df[[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]].columns[0],
                     id='Y_Clase_Arbol_Regresion',
                 ),
-                
-                dbc.Badge("Variables Predictoras", color="light", className="mr-1", text_color="dark"),
+
+                html.H3("Selecciona las variables predictoras"),
                 dcc.Dropdown(
                     # En las opciones que aparezcan en el Dropdown, queremos que aparezcan todas las columnas numéricas, excepto la columna Clase
                     [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
-                    value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:],
+                    # value=[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2][1:],
                     id='X_Clase_Arbol_Regresion',
                     multi=True,
                 ),
@@ -316,12 +316,13 @@ def parse_contents(contents, filename,date):
                 html.H2("Ajuste del algoritmo", style={'text-align': 'center'}),
                 html.Br(),
 
-                html.P("Criterio: Puede ser gini (índice de Gini) y entropy (entropía) en clasificación."),
-                html.P("Divisor: Indica el criterio que se utilizará para dividir los nodos. Puede ser Squared Error, Friedman MSE, Absolute Error, Poisson"),
-                html.P("Profundidad: Indica la máxima profundidad que puede alcanzar el árbol. "),
-                html.P("Muestras-Dividir: Indica la cantidad mínima de muestras requeridas para que un nodo de decisión pueda dividirse."),
-                html.P("Muestras-Hoja: Indica la cantidad mínima de muestras que debe haber en una hoja del árbol. "),
+                # html.P("Criterio: Puede ser gini (índice de Gini) y entropy (entropía) en clasificación."),
+                # html.P("Divisor: Indica el criterio que se utilizará para dividir los nodos. Puede ser Squared Error, Friedman MSE, Absolute Error, Poisson"),
+                # html.P("Profundidad: Indica la máxima profundidad que puede alcanzar el árbol. "),
+                # html.P("Muestras-Dividir: Indica la cantidad mínima de muestras requeridas para que un nodo de decisión pueda dividirse."),
+                # html.P("Muestras-Hoja: Indica la cantidad mínima de muestras que debe haber en una hoja del árbol. "),
 
+                html.Hr(),
                 dcc.Markdown('''**Datos para entrenar**'''),
                 dcc.Input(
                     id='criterio_division_ADR',
@@ -393,7 +394,7 @@ def parse_contents(contents, filename,date):
                 html.Br(),
 
                 # Estilizamos el botón con Bootstrap
-                dbc.Button("Entrenar", className="mr-1", id='submit-button-arbol-regresion', style={'width': '100%'}),
+                dbc.Button("Entrenar", className="mr-1", color="dark", id='submit-button-arbol-regresion', style={'text-align': 'center' ,'width': '20%'}),
 
                 html.Hr(),
 
@@ -413,7 +414,7 @@ def parse_contents(contents, filename,date):
                 html.Hr(),
 
                 dbc.Button(
-                    "Árbol obtenido", id="open-body-scroll-ADR", n_clicks=0, color="primary", className="mr-1", style={'width': '100%'}
+                    "Árbol obtenido", id="open-body-scroll-ADR", n_clicks=0, color="dark", className="mr-1", style={'text-align': 'center' ,'width': '20%'}
                 ),
 
                 dbc.Modal(
@@ -430,6 +431,7 @@ def parse_contents(contents, filename,date):
                                 id="close-body-scroll-ADR",
                                 className="ms-auto",
                                 n_clicks=0,
+                                color="dark",
                             )
                         ),
                     ],
@@ -622,25 +624,25 @@ def regresion(n_clicks, X_Clase, Y_Clase, criterio_division,criterion, splitter,
 
 
         ]), fig2, html.Div([
-            dbc.Alert(r, color="success", style={'whiteSpace': 'pre-line'}, className="mb-3")
+            dbc.Alert(r, style={'whiteSpace': 'pre-line'}, className="mb-3")
         ]), html.Div([
             dbc.Row([
                 dbc.Col([
                     dbc.Input(id='values_X1', type="number", placeholder=df[X_Clase].columns[0],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[0])),
+                    dbc.FormText("Nuevo valor de: " + str(df[X_Clase].columns[0])),
                     dbc.Input(id='values_X2', type="number", placeholder=df[X_Clase].columns[1],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[1])),
+                    dbc.FormText("Nuevo valor de: " + str(df[X_Clase].columns[1])),
                     dbc.Input(id='values_X3', type="number", placeholder=df[X_Clase].columns[2],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[2])),
+                    dbc.FormText("Nuevo valor de: " + str(df[X_Clase].columns[2])),
                     dbc.Input(id='values_X4', type="number", placeholder=df[X_Clase].columns[3],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[3])),
+                    dbc.FormText("Nuevo valor de: " + str(df[X_Clase].columns[3])),
                     dbc.Input(id='values_X5', type="number", placeholder=df[X_Clase].columns[4],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[4])),
+                    dbc.FormText("Nuevo valor de: " + str(df[X_Clase].columns[4])),
                 ], width=6),
             ])
 
         ]), html.Div([
-                dbc.Button("Nuevo pronóstico", id="collapse-button", className="mb-3", color="primary"),
+                dbc.Button("Nuevo pronóstico", id="collapse-button", className="mb-3", color="dark"),
                 dbc.Collapse(
                     dbc.Card(dbc.CardBody([
                         html.Div(id='output-container-button'),
@@ -694,7 +696,7 @@ def regresionFinal(n_clicks, data, values_X1, values_X2, values_X3, values_X4, v
 
             clasiFinal = PronosticoAD.predict(XPredict)
             return html.Div([
-                dbc.Alert('El valor pronosticado con un árbol de decisión que tiene una Exactitud de: ' + str(round(ScoreArbol, 4)*100) + '% es: ' + str(clasiFinal[0]), color="success", style={'textAlign': 'center'})
+                dbc.Alert('Exactitud de: ' + str(round(ScoreArbol, 4)*100) + '% con un valor de: ' + str(clasiFinal[0]), style={'textAlign': 'center'})
             ])
 
 

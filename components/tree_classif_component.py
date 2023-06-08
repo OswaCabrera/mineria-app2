@@ -292,21 +292,21 @@ def parse_contents(contents, filename,date):
 
         html.Br(),
         html.H3("Creación del modelo", style={'text-align': 'center'}),
-        dbc.Badge("Variables Predictoras", color="light", className="mr-1", text_color="dark"),
+        html.H3("Selecciona las variables predictoras"),
             dcc.Dropdown(
                 [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
                 # Seleccionamos la segunda columna numérica del dataframe
-                value=df[[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]].columns,
+                # value=df[[i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2]].columns,
                 id='X_Clase',
                 multi=True,
             ),
 
         # Seleccionamos la variable Clase con un Dropdown
-        dbc.Badge("Variable Clase", color="light", className="mr-1", text_color="dark"),
+        html.H3("Selecciona la variable clase"),
         dcc.Dropdown(
             [i for i in df.columns if (df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) == 2) or df[i].dtype in ['bool'] or (df[i].dtype in ['object'] and len(df[i].unique()) == 2)],
             # Seleccionamos por defecto la primera columna
-            value=df[[i for i in df.columns if (df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) == 2) or df[i].dtype in ['bool'] or (df[i].dtype in ['object'] and len(df[i].unique()) == 2)]].columns[0],
+            # value=df[[i for i in df.columns if (df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) == 2) or df[i].dtype in ['bool'] or (df[i].dtype in ['object'] and len(df[i].unique()) == 2)]].columns[0],
             id='Y_Clase',
             multi=True,
         ),
@@ -317,12 +317,12 @@ def parse_contents(contents, filename,date):
         html.H2("Ajuste del algoritmo", style={'text-align': 'center'}),
         html.Br(),
 
-        html.P("Criterio: Puede ser gini (índice de Gini) y entropy (entropía) en clasificación."),
-        html.P("Divisor: Indica el criterio que se utilizará para dividir los nodos. Puede ser best (mejor) o random (aleatorio)."),
-        html.P("Profundidad: Indica la máxima profundidad que puede alcanzar el árbol. "),
-        html.P("Muestras-Dividir: Indica la cantidad mínima de muestras requeridas para que un nodo de decisión pueda dividirse."),
-        html.P("Muestras-Hoja: Indica la cantidad mínima de muestras que debe haber en una hoja del árbol. "),
-
+        # html.P("Criterio: Puede ser gini (índice de Gini) y entropy (entropía) en clasificación."),
+        # html.P("Divisor: Indica el criterio que se utilizará para dividir los nodos. Puede ser best (mejor) o random (aleatorio)."),
+        # html.P("Profundidad: Indica la máxima profundidad que puede alcanzar el árbol. "),
+        # html.P("Muestras-Dividir: Indica la cantidad mínima de muestras requeridas para que un nodo de decisión pueda dividirse."),
+        # html.P("Muestras-Hoja: Indica la cantidad mínima de muestras que debe haber en una hoja del árbol. "),
+        html.Hr(),
         dcc.Markdown('''**Datos para entrenar**'''),
         dcc.Input(
             id='criterio_division',
@@ -391,7 +391,7 @@ def parse_contents(contents, filename,date):
 
         html.Br(),
 
-        dbc.Button("Entrenar", className="mr-1", id='submit-button-clasificacion',style={'width': '100%'}),
+        dbc.Button("Entrenar", className="mr-1", color="dark", id='submit-button-clasificacion', style={'text-align': 'center' ,'width': '20%'}),
 
         html.Hr(),
 
@@ -414,7 +414,7 @@ def parse_contents(contents, filename,date):
 
 
         dbc.Button(
-            "Árbol obtenido", id="open-body-scroll-ADC", n_clicks=0, color="primary", className="mr-1", style={'width': '100%'}
+            "Árbol obtenido", id="open-body-scroll-ADC", n_clicks=0, color="dark", className="mr-1", style={'text-align': 'center' ,'width': '20%'}
         ),
 
         dbc.Modal(
@@ -431,6 +431,7 @@ def parse_contents(contents, filename,date):
                         id="close-body-scroll-ADC",
                         className="ms-auto",
                         n_clicks=0,
+                        color="dark",
                     )
                 ),
             ],
@@ -739,7 +740,7 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, spli
             ]),
 
         ]), html.Div([
-                dbc.Button("Nueva clasificación...", id="collapse-button", className="mb-3", color="primary"),
+                dbc.Button("Nueva clasificación...", id="collapse-button", className="mb-3", color="dark"),
                 dbc.Collapse(
                     dbc.Card(dbc.CardBody([
                         html.Div(id='output-container-button'),
@@ -780,7 +781,7 @@ def AD_Clasificacion_Pronostico(n_clicks, values_X1, values_X2, values_X3, value
 
             clasiFinal = ClasificacionAD.predict(XPredict)
             return html.Div([
-                dbc.Alert('El valor clasificado con un árbol de decisión que tiene una Exactitud de: ' + str(round(exactitud, 4)*100) + '% es: ' + str(clasiFinal[0]), color="success", style={'textAlign': 'center'})
+                dbc.Alert('Exactitud de: ' + str(round(exactitud, 4)*100) + '% con valor de: ' + str(clasiFinal[0]), style={'textAlign': 'center'})
             ])
 
 
