@@ -151,7 +151,13 @@ def parse_contents(contents, filename,date):
 
         dash_table.DataTable(
             data=df.to_dict('records'),
-            page_size=10,
+            page_size=8,
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': 'rgb(248, 248, 248)'
+                }
+            ],
             filter_action='native',
             sort_action='native',
             sort_mode='multi',

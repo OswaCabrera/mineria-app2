@@ -76,22 +76,28 @@ routes = {
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
     navbar,
-    dcc.Loading(
-        id="ls-loading-output-1",
-        type="circle",
-        children=[
-            dbc.Container(id="page-content", fluid=True),
-        ],
-        fullscreen=True,
-    ),
+    dbc.Container(id="page-content", fluid=True, className= "mt-5")
 ])
 
-@app.callback(Output("ls-loading-output-1", "children"), Input("page-content", "value"))
-def input_triggers_spinner(value):
-    time.sleep(1)
-    return value
+# app.layout = html.Div([
+#     dcc.Location(id="url", refresh=False),
+#     navbar,
+#     dcc.Loading(
+#         id="ls-loading-output-1",
+#         type="circle",
+#         children=[
+#             dbc.Container(id="page-content", fluid=True),
+#         ],
+#         fullscreen=True,
+#     ),
+# ])
 
-component = home_component.layout
+# @app.callback(Output("ls-loading-output-1", "children"), Input("page-content", "value"))
+# def input_triggers_spinner(value):
+#     time.sleep(1)
+#     return value
+
+# component = home_component.layout
 
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):
