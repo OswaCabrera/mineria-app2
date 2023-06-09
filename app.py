@@ -43,17 +43,6 @@ navbar = dbc.NavbarSimple(
             in_navbar=True,
             label="Bosques Aleatorios",
         ),
-        dbc.DropdownMenu(
-            children=[
-                dbc.DropdownMenuItem("EDA", href="/"),
-                dbc.DropdownMenuItem("PCA", href="/"),
-                dbc.DropdownMenuItem("Arboles", href="/"),
-                dbc.DropdownMenuItem("Bosques", href="/"),
-            ],
-            nav=True,
-            in_navbar=True,
-            label="Acerca de",
-        ),
 
     ],
     brand="MineriApp",
@@ -73,12 +62,6 @@ routes = {
     "/bosques_regresion": forest_regre_component.layout,
 }
 
-app.layout = html.Div([
-    dcc.Location(id="url", refresh=False),
-    navbar,
-    dbc.Container(id="page-content", fluid=True, className= "mt-5")
-])
-
 # app.layout = html.Div([
 #     dcc.Location(id="url", refresh=False),
 #     navbar,
@@ -90,14 +73,28 @@ app.layout = html.Div([
 #         ],
 #         fullscreen=True,
 #     ),
+#     dbc.Container(id="page-content", fluid=True, className= "mt-5")
 # ])
 
-# @app.callback(Output("ls-loading-output-1", "children"), Input("page-content", "value"))
-# def input_triggers_spinner(value):
-#     time.sleep(1)
-#     return value
+app.layout = html.Div([
+    dcc.Location(id="url", refresh=False),
+    navbar,
+    dcc.Loading(
+        id="ls-loading-output-1",
+        type="circle",
+        children=[
+            dbc.Container(id="page-content", fluid=True),
+        ],
+        fullscreen=True,
+    ),
+])
 
-# component = home_component.layout
+@app.callback(Output("ls-loading-output-1", "children"), Input("page-content", "value"))
+def input_triggers_spinner(value):
+    time.sleep(1)
+    return value
+
+component = home_component.layout
 
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):

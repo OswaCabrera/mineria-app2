@@ -507,7 +507,7 @@ def regresionFinal(n_clicks, data, values_X1, values_X2, values_X3, values_X4, v
 
             clasiFinal = PronosticoBA.predict(XPredict)
             return html.Div([
-                dbc.Alert('Exactitud de: ' + str(round(ScoreArbol, 6)*100) + '% con valor de: ' + str(clasiFinal[0]), color="success", style={'textAlign': 'center'})
+                dbc.Alert('Tu valor calculado es: ' + str(clasiFinal[0]), color="dark", style={'textAlign': 'center'})
             ])
 
 

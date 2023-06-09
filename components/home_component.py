@@ -38,7 +38,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/eda.png", top=True),
+                                dbc.CardImg(src="https://media.licdn.com/dms/image/C4E0DAQEuPRNnsUAxGA/learning-public-crop_288_512/0/1635327651295?e=2147483647&v=beta&t=tG_wj5gly-8N_jAMnxpFyZE3W8Fl8fgphYpqLuLFNFc", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("EDA", className="card-title"),
@@ -55,7 +55,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/pca.jpg", top=True),
+                                dbc.CardImg(src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRm6hU0agptmSjKyxdDZYojzngn_NAby_qiRb6m2A5iR7kkQiiUQ8bhQgWE4R_yyLfDYt8&usqp=CAU", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("PCA", className="card-title"),
@@ -72,7 +72,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/arbol.webp", top=True),
+                                dbc.CardImg(src="https://fhernanb.github.io/libro_mod_pred/libro_mod_pred_files/figure-html/unnamed-chunk-27-1.png", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("Árboles de Clasificación", className="card-title"),
@@ -94,7 +94,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/carrusel1.jpg", top=True),
+                                dbc.CardImg(src="https://fhernanb.github.io/libro_mod_pred/images/ilustracion_arb_regresion.png", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("Árboles de Regresión", className="card-title"),
@@ -111,7 +111,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/carrusel1.jpg", top=True),
+                                dbc.CardImg(src="https://fhernanb.github.io/libro_mod_pred/images/rand_forest_clas_reg.png", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("Bosques de Clasificación", className="card-title"),
@@ -128,7 +128,7 @@ layout = dbc.Container(
                     [
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/static/images/carrusel1.jpg", top=True),
+                                dbc.CardImg(src="https://fhernanb.github.io/libro_mod_pred/images/rand_forest_clas_reg.png", top=True, style={"height": "200px"}),
                                 dbc.CardBody(
                                     [
                                         html.H5("Bosques de Regresión", className="card-title"),
