@@ -97,7 +97,6 @@ def parse_contents(contents, filename,date):
 
     return html.Div([
         html.P('Estás trabajando con el archivo: {}'.format(filename)),
-        # dcc.Tab(label='Aplicación del algoritmo', style=tab_style, selected_style=tab_selected_style, children=[
                 html.H3("Selecciona las variables predictoras", style={'text-align': 'center'}),
                     dcc.Dropdown(
                         [i for i in df.columns if df[i].dtype in ['float64', 'int64'] and len(df[i].unique()) > 2],
@@ -238,7 +237,7 @@ def parse_contents(contents, filename,date):
                 html.Hr(),
 
                 # Estilizamos el botón con Bootstrap
-                dbc.Button("Aplicar algoritmo",  color="primary", className="mr-1", id='submit-button-clasificacion-bosques', style={'text-align': 'center' ,'width': '20%'}),
+                dbc.Button("Aplicar algoritmo",  color="dark", className="mr-1", id='submit-button-clasificacion-bosques', style={'text-align': 'center' ,'width': '20%'}),
 
                 html.Hr(),
 
@@ -261,17 +260,6 @@ def parse_contents(contents, filename,date):
 
                 html.Div(id='arbol_estimador_BAC'),
                 html.Div(id='arbol_estimador_BAC2'),
-            # ]),
-
-            # dcc.Tab(label='Nuevas Clasificaciones', style=tab_style, selected_style=tab_selected_style, children=[
-                html.H3("Introduce los datos de las nuevas clasificaciones", style={'text-align': 'center'}),
-                html.Hr(),
-                html.Div(id='output-clasificacion-BAC'),
-                html.Hr(),
-                html.Div(id='valor-clasificacion-BAC'),
-                html.Div(id='valor-clasificacion-BAC2'),
-                
-            # ]),
 
 
         ])
@@ -307,8 +295,6 @@ def update_graph(xaxis_column, yaxis_column, caxis_column):
     Output('clasificacion-bosque-clasificacion', 'children'),
     Output('importancia-bosque-clasificacion', 'figure'),
     Output('roc-bosque-clasificacion', 'figure'),
-    Output('output-clasificacion-BAC', 'children'),
-    Output('valor-clasificacion-BAC', 'children'),
     Output('arbol_estimador_BAC', 'children'),
     Output('arbol_estimador_BAC2', 'children'),
     Input('submit-button-clasificacion-bosques','n_clicks'),
@@ -420,12 +406,12 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
             html.H2(["", html.H3("Matriz de clasificación")]),
             dbc.Row([
                 dbc.Col([
-                    dbc.Alert('Verdaderos Positivos (VP): ' + str(VP), color="info"),
-                    dbc.Alert('Falsos Positivos (FP): ' + str(FP), color="info"),
+                    dbc.Alert('Verdaderos Positivos: ' + str(VP), color="dark"),
+                    dbc.Alert('Falsos Positivos: ' + str(FP), color="dark"),
                 ], width=4),
                 dbc.Col([
-                    dbc.Alert('Falsos Negativos (FN): ' + str(FN), color="info"),
-                    dbc.Alert('Verdaderos Negativos (VN): ' + str(VN), color="info"),
+                    dbc.Alert('Falsos Negativos: ' + str(FN), color="dark"),
+                    dbc.Alert('Verdaderos Negativos: ' + str(VN), color="dark"),
                 ], width=4),
                 ], justify="center"), 
         ]), html.Div([
@@ -471,15 +457,14 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
                 class_name='table table-hover table-bordered table-striped',
             ),
 
-            html.H2(["", html.H3("Reporte de la efectividad del algoritmo obtenido")]),
+            html.H2(["", html.H3("Reporte del modelo obtenido")]),
             dbc.Table(
                 [
                     html.Thead(
                         html.Tr(
                             [
                                 html.Th("Reporte de clasificación"),
-                                html.Th("Reporte de clasificación para la clase: " + str(classification_report(Y_validation, Y_Clasificacion).split()[4])),
-                                html.Th("Reporte de clasificación para la clase: " + str(classification_report(Y_validation, Y_Clasificacion).split()[9])),
+                                html.Th("Reporte de clasificación para la  variable clase" ),
                             ]
                         )
                     ),
@@ -487,37 +472,32 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
                         [
                             html.Tr(
                                 [
-                                    html.Td("Exactitud (Accuracy): " + str(round(exactitud*100,2)) + '%', style={'color': 'green'}),
+                                    html.Td("Exactitud : " + str(round(exactitud*100,2)) + '%'),
                                     html.Td("Precisión: " + str(round(float(VP/(VP+FP))*100,5)) + '%'),
-                                    html.Td("Precisión: " + str(round(float(VN/(VN+FN))*100,5)) + '%'),
                                 ]
                             ),
                             html.Tr(
                                 [
-                                    html.Td("Tasa de error (Misclassification Rate): " + str(round(tasa_error*100,2)) + '%', style={'color': 'red'}),
+                                    html.Td("Tasa de error (Misclassification Rate): " + str(round(tasa_error*100,2)) + '%'),
                                     html.Td("Sensibilidad (Recall, Sensitivity, True Positive Rate): " + str(round(float(VP/(VP+FN))*100,5)) + '%'),
-                                    html.Td("Sensibilidad (Recall, Sensitivity, True Positive Rate): " + str(round(float(VN/(VN+FP))*100,5)) + '%'),
                                 ]
                             ),
                             html.Tr(
                                 [
-                                    html.Td("Valores Verdaderos: " + str((Y_validation == Y_Clasificacion).sum()), style={'color': 'green'}),
+                                    html.Td("Valores Verdaderos: " + str((Y_validation == Y_Clasificacion).sum())),
                                     html.Td("Especificidad (Specificity, True Negative Rate): " + str(round(float(VN/(VN+FP))*100,5)) + '%'),
-                                    html.Td("Especificidad (Specificity, True Negative Rate): " + str(round(float(VP/(VP+FN))*100,5)) + '%'),
                                 ]
                             ),
                             html.Tr(
                                 [
-                                    html.Td("Valores Falsos: " + str((Y_validation != Y_Clasificacion).sum()), style={'color': 'red'}),
+                                    html.Td("Valores Falsos: " + str((Y_validation != Y_Clasificacion).sum())),
                                     html.Td("F1-Score: " + str(round(float(2*VP/(2*VP+FP+FN))*100,5)) + '%'),
-                                    html.Td("F1-Score: " + str(round(float(2*VN/(2*VN+FN+FP))*100,5)) + '%'),
                                 ]
                             ),
                             html.Tr(
                                 [
                                     html.Td("Valores Totales: " + str(Y_validation.size)),
                                     html.Td("Número de muestras: " + str(classification_report(Y_validation, Y_Clasificacion).split()[8])),
-                                    html.Td("Número de muestras: " + str(classification_report(Y_validation, Y_Clasificacion).split()[13])),
                                 ]
                             ),
                         ]
@@ -531,7 +511,7 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
             ),
 
 
-        ]), fig2, fig3, html.Div([
+        ]), fig2, fig3,  html.Div([
             dbc.Row([
                 dbc.Col([
                     dbc.Input(id='values_X1_BA_Clasificacion', type="number", placeholder=df[X_Clase].columns[0],style={'width': '100%'}),
@@ -555,14 +535,13 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
                     dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[6])),
                     dbc.Input(id='values_X8_BA_Clasificacion', type="number", placeholder=df[X_Clase].columns[7],style={'width': '100%'}),
                     dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[7])),
-                    dbc.Input(id='values_X9_BA_Clasificacion', type="number", placeholder=df[X_Clase].columns[8],style={'width': '100%'}),
-                    dbc.FormText("Ingrese el valor de la variable: " + str(df[X_Clase].columns[8])),
                 ], width=4),
             ]),
 
         ]), html.Div([
-                dbc.Button("Haz click para mostrar la clasificación...", id="collapse-button-BA", className="mb-3", color="primary"),
-        ]),  
+                dbc.Button("Haz click para mostrar la clasificación...", id="collapse-button-BA", className="mb-3", color="dark", style={'text-align': 'center'}),
+                html.Div(id='valor-clasificacion-BAC2'),
+    ]),  
     
     elif n_clicks is None:
         import dash.exceptions as de
@@ -579,21 +558,20 @@ def clasificacion(n_clicks, X_Clase, Y_Clase, criterio_division, criterion, n_es
     State('values_X6_BA_Clasificacion', 'value'),
     State('values_X7_BA_Clasificacion', 'value'),
     State('values_X8_BA_Clasificacion', 'value'),
-    State('values_X9_BA_Clasificacion', 'value'),
 )
-def AD_Clasificacion_Pronostico(n_clicks, values_X1, values_X2, values_X3, values_X4, values_X5, values_X6, values_X7, values_X8, values_X9):
+def AD_Clasificacion_Pronostico(n_clicks, values_X1, values_X2, values_X3, values_X4, values_X5, values_X6, values_X7, values_X8):
     if n_clicks is not None:
-        if values_X1 is None or values_X2 is None or values_X3 is None or values_X4 is None or values_X5 is None or values_X6 is None or values_X7 is None or values_X8 is None or values_X9 is None:
+        if values_X1 is None or values_X2 is None or values_X3 is None or values_X4 is None or values_X5 is None or values_X6 is None or values_X7 is None or values_X8 is None:
             return html.Div([
-                dbc.Alert('Debe ingresar los valores de todas las variables', color="danger")
+                html.P('Debe ingresar los valores de todas las variables')
             ])
         else:
             
-            XPredict = pd.DataFrame([[values_X1, values_X2, values_X3, values_X4, values_X5, values_X6, values_X7, values_X8, values_X9]])
+            XPredict = pd.DataFrame([[values_X1, values_X2, values_X3, values_X4, values_X5, values_X6, values_X7, values_X8]])
 
             clasiFinal = ClasificacionBA.predict(XPredict)
             return html.Div([
-                dbc.Alert('El valor clasificado con un Bosque Aleatorio que tiene una Exactitud de: ' + str(round(exactitud, 4)*100) + '% es: ' + str(clasiFinal[0]), color="success", style={'textAlign': 'center'})
+                dbc.Alert('Con los valores obtenidos el valor (o etiqueta) que se le asigna es: '  + str(clasiFinal[0]), color="dark", style={'textAlign': 'center'})
             ])
 
 
